@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// Importamos la API de categorías
 import { obtenerCategorias, agregarCategoria, eliminarCategoria, editarCategoria } from '../lib/categoriasApi';
 
-// Recibe la 'session' como prop desde App.jsx
 function Categorias({ session }) {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
-  // Estado para el formulario de nueva/edición categoría
   const [nuevaCategoriaNombre, setNuevaCategoriaNombre] = useState('');
-  const [nuevaCategoriaTipo, setNuevaCategoriaTipo] = useState('Egreso'); // Tipo por defecto
-  const [editandoCategoria, setEditandoCategoria] = useState(null); // Guarda {id, nombre, tipo}
+  const [nuevaCategoriaTipo, setNuevaCategoriaTipo] = useState('Egreso');
+  const [editandoCategoria, setEditandoCategoria] = useState(null);
 
   const cargarDatos = useCallback(async () => {
     if (!session?.user?.id) {
@@ -22,7 +19,6 @@ function Categorias({ session }) {
     setCargando(true);
     setError(null);
     try {
-      // obtenerCategorias usará RLS implícitamente
       const { data, error: errorFetch } = await obtenerCategorias();
       if (errorFetch) throw errorFetch;
       setCategorias(data || []);
@@ -46,28 +42,25 @@ function Categorias({ session }) {
     if (!session?.user?.id) {
         setError("Error: No se pudo obtener el ID del usuario para agregar la categoría."); return;
     }
-
     setError(null);
     const categoriaData = {
         nombre: nuevaCategoriaNombre.trim(),
         tipo: nuevaCategoriaTipo
-        // user_id se pasará como argumento
     };
-
+    const userId = session.user.id;
     try {
-      // Pasamos el ID del usuario
-      const { data, error: errorAdd } = await agregarCategoria(categoriaData, session.user.id);
+      const { data, error: errorAdd } = await agregarCategoria(categoriaData, userId);
       if (errorAdd) throw errorAdd;
-      setCategorias(prev => [...prev, data].sort((a, b) => a.nombre.localeCompare(b.nombre))); // Añadir y ordenar
+      setCategorias(prev => [...prev, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       setNuevaCategoriaNombre('');
-      setNuevaCategoriaTipo('Egreso'); // Resetear tipo por defecto
+      setNuevaCategoriaTipo('Egreso');
     } catch (err) {
       setError(`Error al agregar categoría: ${err.message || 'Desconocido'}`);
     }
   };
 
   const handleEliminarClick = async (id) => {
-     if (!window.confirm(`¿Estás seguro de eliminar esta categoría? (Esto no afectará transacciones existentes)`)) return;
+     if (!window.confirm(`¿Estás seguro de eliminar esta categoría?`)) return;
      setError(null);
      try {
        const { error: errorDelete } = await eliminarCategoria(id);
@@ -78,11 +71,11 @@ function Categorias({ session }) {
      }
   };
 
-  // Funciones para Editar
   const handleEditarClick = (categoria) => {
       setEditandoCategoria(categoria);
       setNuevaCategoriaNombre(categoria.nombre);
       setNuevaCategoriaTipo(categoria.tipo);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelarEdicion = () => {
@@ -101,21 +94,19 @@ function Categorias({ session }) {
            nombre: nuevaCategoriaNombre.trim(),
            tipo: nuevaCategoriaTipo
        };
-
        try {
            const { data, error: errorEdit } = await editarCategoria(editandoCategoria.id, datosActualizados);
            if (errorEdit) throw errorEdit;
-           setCategorias(prev => prev.map(c => c.id === editandoCategoria.id ? data : c).sort((a, b) => a.nombre.localeCompare(b.nombre))); // Actualizar y ordenar
+           setCategorias(prev => prev.map(c => c.id === editandoCategoria.id ? data : c).sort((a, b) => a.nombre.localeCompare(b.nombre)));
            handleCancelarEdicion();
        } catch (err) {
            setError(`Error al editar categoría: ${err.message || 'Desconocido'}`);
        }
   };
 
-  // Clases reutilizables
   const labelClasses = "block text-sm font-medium text-gray-300 mb-1";
   const inputClasses = `block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 placeholder-gray-500 text-sm shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`;
-   const selectClasses = `${inputClasses} bg-gray-700`; // Asegura fondo oscuro para select
+  const selectClasses = `${inputClasses} bg-gray-700`;
   const buttonClasses = (color = 'indigo') => `px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-${color}-600 hover:bg-${color}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-${color}-500 transition duration-150 disabled:opacity-50`;
 
   return (
@@ -132,25 +123,11 @@ function Categorias({ session }) {
         <form onSubmit={editandoCategoria ? handleGuardarEdicionSubmit : handleAgregarSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
           <div>
             <label htmlFor="categoriaNombre" className={labelClasses}>Nombre Categoría</label>
-            <input
-              type="text"
-              id="categoriaNombre"
-              value={nuevaCategoriaNombre}
-              onChange={(e) => setNuevaCategoriaNombre(e.target.value)}
-              placeholder="Ej: Comida, Salario..."
-              required
-              className={inputClasses}
-            />
+            <input type="text" id="categoriaNombre" value={nuevaCategoriaNombre} onChange={(e) => setNuevaCategoriaNombre(e.target.value)} placeholder="Ej: Comida, Salario..." required className={inputClasses} />
           </div>
           <div>
              <label htmlFor="categoriaTipo" className={labelClasses}>Tipo</label>
-             <select
-               id="categoriaTipo"
-               value={nuevaCategoriaTipo}
-               onChange={(e) => setNuevaCategoriaTipo(e.target.value)}
-               required
-               className={selectClasses} // Usar clases de select
-             >
+             <select id="categoriaTipo" value={nuevaCategoriaTipo} onChange={(e) => setNuevaCategoriaTipo(e.target.value)} required className={selectClasses} >
                 <option value="Ingreso">Ingreso</option>
                 <option value="Egreso">Egreso</option>
              </select>
@@ -159,11 +136,7 @@ function Categorias({ session }) {
             <button type="submit" className={buttonClasses(editandoCategoria ? 'yellow' : 'green')}>
               {editandoCategoria ? '💾 Guardar' : '➕ Agregar'}
             </button>
-            {editandoCategoria && (
-                <button type="button" onClick={handleCancelarEdicion} className={buttonClasses('gray')}>
-                    Cancelar
-                </button>
-            )}
+            {editandoCategoria && ( <button type="button" onClick={handleCancelarEdicion} className={buttonClasses('gray')}> Cancelar </button> )}
           </div>
         </form>
          {error && !cargando && <p className="text-red-400 mt-4 text-sm">{error}</p>}
@@ -174,46 +147,42 @@ function Categorias({ session }) {
         {cargando && <p className="text-blue-400">Cargando categorías...</p>}
         {error && cargando && <p className="text-red-400">{error}</p>}
 
-        {!cargando && categorias.length === 0 && !error && (
-          <p className="text-gray-500">No hay categorías registradas.</p>
-        )}
+        {!cargando && categorias.length === 0 && !error && ( <p className="text-gray-500">No hay categorías registradas.</p> )}
 
         {!cargando && categorias.length > 0 && (
           <div className="overflow-x-auto relative shadow-md rounded-lg border border-gray-700">
             <table className="w-full text-sm text-left text-gray-400">
               <thead className="text-xs text-gray-400 uppercase bg-gray-700">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Nombre</th>
-                  <th scope="col" className="px-6 py-3">Tipo</th>
-                  <th scope="col" className="px-6 py-3 text-center">Acciones</th>
+                  <th scope="col" className="px-4 py-3">Nombre</th>
+                  {/* Tipo: Oculto por defecto (hidden), visible desde 'sm' */}
+                  <th scope="col" className="px-4 py-3 hidden sm:table-cell">Tipo</th>
+                  <th scope="col" className="px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {categorias.map((categoria) => (
                   <tr key={categoria.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600">
-                    <td className="px-6 py-4 font-medium text-gray-300 whitespace-nowrap">
+                    <td className="px-4 py-4 font-medium text-gray-300 whitespace-nowrap">
                       {categoria.nombre}
+                      {/* Mostrar tipo debajo del nombre en pantallas extra pequeñas */}
+                      <div className="sm:hidden text-xs mt-1">
+                        <span className={`px-2 py-0.5 rounded font-medium ${categoria.tipo === 'Ingreso' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                            {categoria.tipo}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Tipo: Oculto por defecto (hidden), visible desde 'sm' */}
+                    <td className="px-4 py-4 hidden sm:table-cell">
                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoria.tipo === 'Ingreso' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
                            {categoria.tipo}
                        </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleEditarClick(categoria)}
-                        className="font-medium text-yellow-400 hover:text-yellow-300 mr-3"
-                        aria-label={`Editar ${categoria.nombre}`}
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        onClick={() => handleEliminarClick(categoria.id)}
-                        className="font-medium text-red-500 hover:text-red-400"
-                        aria-label={`Eliminar ${categoria.nombre}`}
-                      >
-                        🗑️ Eliminar
-                      </button>
+                    <td className="px-4 py-4 text-center">
+                       <div className="flex justify-center items-center flex-wrap gap-2">
+                          <button onClick={() => handleEditarClick(categoria)} className="font-medium text-yellow-400 hover:text-yellow-300 whitespace-nowrap" aria-label={`Editar ${categoria.nombre}`}> ✏️ Editar </button>
+                          <button onClick={() => handleEliminarClick(categoria.id)} className="font-medium text-red-500 hover:text-red-400 whitespace-nowrap" aria-label={`Eliminar ${categoria.nombre}`}> 🗑️ Eliminar </button>
+                       </div>
                     </td>
                   </tr>
                 ))}

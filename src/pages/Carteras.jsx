@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { obtenerCarteras, agregarCartera, eliminarCartera, editarCartera } from '../lib/carterasApi';
 
-function Carteras({ session }) { // Recibe la sesión
+function Carteras({ session }) {
   const [carteras, setCarteras] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -39,19 +39,10 @@ function Carteras({ session }) { // Recibe la sesión
     if (!nuevaCarteraNombre.trim()) {
       alert("El nombre de la cartera no puede estar vacío."); return;
     }
-
-    // *** DEBUGGING LOG ***
-    console.log("[handleAgregarSubmit] Verificando sesión:", session);
-    console.log("[handleAgregarSubmit] Verificando session.user:", session?.user);
-    console.log("[handleAgregarSubmit] Verificando session.user.id:", session?.user?.id);
-    // *** FIN DEBUGGING LOG ***
-
     if (!session?.user?.id) {
-        setError("Error: No se pudo obtener el ID del usuario para agregar la cartera. Verifica la sesión.");
-        console.error("[handleAgregarSubmit] session.user.id es nulo o indefinido."); // Log específico
+        setError("Error: No se pudo obtener el ID del usuario para agregar la cartera.");
         return;
     }
-
     const saldoInicialNum = parseFloat(nuevaCarteraSaldo);
     const saldoParaGuardar = isNaN(saldoInicialNum) ? 0 : saldoInicialNum;
     setError(null);
@@ -59,21 +50,15 @@ function Carteras({ session }) { // Recibe la sesión
         nombre: nuevaCarteraNombre.trim(),
         saldo_inicial: saldoParaGuardar
     };
-
-    // Obtenemos el ID aquí para asegurar que no sea null
     const userId = session.user.id;
-    console.log("[handleAgregarSubmit] ID de usuario a pasar a la API:", userId); // Log del ID a pasar
-
     try {
-      const { data, error: errorAdd } = await agregarCartera(carteraData, userId); // Pasamos el ID verificado
+      const { data, error: errorAdd } = await agregarCartera(carteraData, userId);
       if (errorAdd) throw errorAdd;
-      setCarteras(prev => [...prev, data]);
+      setCarteras(prev => [...prev, data].sort((a, b) => a.nombre.localeCompare(b.nombre))); // Ordenar al agregar
       setNuevaCarteraNombre('');
       setNuevaCarteraSaldo('');
     } catch (err) {
-      // El error de Supabase (violates not-null) debería ocurrir DESPUÉS de los logs si el ID sigue siendo null
       setError(`Error al agregar cartera: ${err.message || 'Desconocido'}`);
-      console.error("[handleAgregarSubmit] Error devuelto por agregarCartera:", err); // Log del error API
     }
   };
 
@@ -93,6 +78,8 @@ function Carteras({ session }) { // Recibe la sesión
       setEditandoCartera(cartera);
       setNuevaCarteraNombre(cartera.nombre);
       setNuevaCarteraSaldo(cartera.saldo_inicial !== null ? String(cartera.saldo_inicial) : '');
+      // Scroll al formulario (opcional)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelarEdicion = () => {
@@ -116,7 +103,7 @@ function Carteras({ session }) { // Recibe la sesión
        try {
            const { data, error: errorEdit } = await editarCartera(editandoCartera.id, datosActualizados);
            if (errorEdit) throw errorEdit;
-           setCarteras(prev => prev.map(c => c.id === editandoCartera.id ? data : c));
+           setCarteras(prev => prev.map(c => c.id === editandoCartera.id ? data : c).sort((a, b) => a.nombre.localeCompare(b.nombre))); // Ordenar al editar
            handleCancelarEdicion();
        } catch (err) {
            setError(`Error al editar cartera: ${err.message || 'Desconocido'}`);
@@ -170,23 +157,45 @@ function Carteras({ session }) { // Recibe la sesión
         {!cargando && carteras.length === 0 && !error && ( <p className="text-gray-500">No hay carteras registradas.</p> )}
 
         {!cargando && carteras.length > 0 && (
+          // Contenedor de la tabla con overflow
           <div className="overflow-x-auto relative shadow-md rounded-lg border border-gray-700">
             <table className="w-full text-sm text-left text-gray-400">
               <thead className="text-xs text-gray-400 uppercase bg-gray-700">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Nombre</th>
-                  <th scope="col" className="px-6 py-3">Saldo Inicial</th>
-                  <th scope="col" className="px-6 py-3 text-center">Acciones</th>
+                  {/* Ajustamos padding para menos espacio horizontal */}
+                  <th scope="col" className="px-4 py-3">Nombre</th>
+                  <th scope="col" className="px-4 py-3">Saldo Inicial</th>
+                  <th scope="col" className="px-4 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {carteras.map((cartera) => (
                   <tr key={cartera.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600">
-                    <td className="px-6 py-4 font-medium text-gray-300 whitespace-nowrap">{cartera.nombre}</td>
-                    <td className="px-6 py-4 text-gray-400">{formatearMoneda(cartera.saldo_inicial)}</td>
-                    <td className="px-6 py-4 text-center">
-                      <button onClick={() => handleEditarClick(cartera)} className="font-medium text-yellow-400 hover:text-yellow-300 mr-3" aria-label={`Editar ${cartera.nombre}`}>✏️ Editar</button>
-                      <button onClick={() => handleEliminarClick(cartera.id)} className="font-medium text-red-500 hover:text-red-400" aria-label={`Eliminar ${cartera.nombre}`}>🗑️ Eliminar</button>
+                    <td className="px-4 py-4 font-medium text-gray-300 whitespace-nowrap">
+                      {cartera.nombre}
+                    </td>
+                    <td className="px-4 py-4 text-gray-400 whitespace-nowrap"> {/* Evita wrap en saldo */}
+                      {formatearMoneda(cartera.saldo_inicial)}
+                    </td>
+                    {/* Celda de Acciones: flex y wrap para mejor manejo en pantallas pequeñas */}
+                    <td className="px-4 py-4 text-center">
+                       {/* Contenedor flex para botones, permite wrap si no caben */}
+                       <div className="flex justify-center items-center flex-wrap gap-2"> {/* gap-2 añade espacio */}
+                          <button
+                            onClick={() => handleEditarClick(cartera)}
+                            className="font-medium text-yellow-400 hover:text-yellow-300 whitespace-nowrap" // whitespace-nowrap en botón
+                            aria-label={`Editar ${cartera.nombre}`}
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleEliminarClick(cartera.id)}
+                            className="font-medium text-red-500 hover:text-red-400 whitespace-nowrap" // whitespace-nowrap en botón
+                            aria-label={`Eliminar ${cartera.nombre}`}
+                          >
+                            🗑️ Eliminar
+                          </button>
+                       </div>
                     </td>
                   </tr>
                 ))}
