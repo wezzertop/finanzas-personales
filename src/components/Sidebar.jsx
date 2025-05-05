@@ -1,45 +1,59 @@
-// Archivo: src/components/Sidebar.jsx
 import React from 'react';
 
-// Ya no necesitamos importar react-icons
-
-function Sidebar() {
-  // Define el elemento activo (esto podría ser dinámico más adelante)
+// Recibe la función para cerrar como prop
+function Sidebar({ closeMobileMenu }) {
   const activeItem = 'Transacciones';
 
-  // Define los elementos del menú usando emojis
   const menuItems = [
     { name: 'Dashboard', emoji: '📊' },
     { name: 'Transacciones', emoji: '🔄' },
     { name: 'Categorías', emoji: '🏷️' },
     { name: 'Gráficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
-    { name: 'Salir', emoji: '🚪', isBottom: true }, // Elemento al final
+    { name: 'Salir', emoji: '🚪', isBottom: true },
   ];
 
+  // Función para manejar clics en enlaces (cierra el menú en móvil)
+  const handleLinkClick = () => {
+    if (closeMobileMenu) { // Solo llama si la función existe (estamos en móvil)
+      closeMobileMenu();
+    }
+    // Aquí iría la lógica de navegación real si usaras un router
+  };
+
+
   return (
-    // Contenedor principal de la barra lateral
-    <aside className="w-64 min-h-screen bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg">
-      {/* Sección del título o logo */}
-      <div className="mb-10 text-center">
+    <aside className="w-full h-full bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg"> {/* w-full/h-full para ocupar el contenedor fijo */}
+      {/* Encabezado con Título y Botón de Cierre (visible en móvil) */}
+      <div className="flex justify-between items-center mb-10">
         <h1 className="text-2xl font-bold text-white">Finanzas</h1>
+        {/* Botón de cierre solo visible en pantallas menores a 'md' */}
+        {closeMobileMenu && ( // Mostrar solo si la prop existe
+          <button
+            onClick={closeMobileMenu}
+            className="text-gray-400 hover:text-white md:hidden"
+            aria-label="Cerrar menú"
+          >
+            <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Navegación principal */}
       <nav className="flex-grow">
         <ul>
-          {/* Mapea los elementos del menú que no van al final */}
           {menuItems.filter(item => !item.isBottom).map((item) => (
             <li key={item.name} className="mb-3">
               <a
-                href="#" // Enlace temporal
+                href="#"
+                onClick={handleLinkClick} // Cierra menú al hacer clic
                 className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
                   activeItem === item.name
-                    ? 'bg-green-600 text-white shadow-md' // Estilo si está activo
-                    : 'hover:bg-gray-700 hover:text-white' // Estilo al pasar el ratón
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'hover:bg-gray-700 hover:text-white'
                 }`}
               >
-                {/* Renderiza el emoji dentro de un span para controlar el espaciado */}
                 <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">{item.emoji}</span>
                 <span>{item.name}</span>
               </a>
@@ -48,21 +62,19 @@ function Sidebar() {
         </ul>
       </nav>
 
-      {/* Navegación inferior (elementos como Salir) */}
       <nav>
         <ul>
-          {/* Mapea los elementos del menú que van al final */}
-          {menuItems.filter(item => item.isBottom).map((item) => (
+         {menuItems.filter(item => item.isBottom).map((item) => (
             <li key={item.name} className="mb-3">
               <a
-                href="#" // Enlace temporal
+                href="#"
+                onClick={handleLinkClick} // Cierra menú al hacer clic
                 className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
                   activeItem === item.name
-                    ? 'bg-green-600 text-white shadow-md' // Estilo si está activo
-                    : 'hover:bg-gray-700 hover:text-white' // Estilo al pasar el ratón
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'hover:bg-gray-700 hover:text-white'
                 }`}
               >
-                {/* Renderiza el emoji dentro de un span */}
                 <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">{item.emoji}</span>
                 <span>{item.name}</span>
               </a>

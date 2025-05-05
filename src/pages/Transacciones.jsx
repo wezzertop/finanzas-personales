@@ -29,6 +29,15 @@ function Transacciones() {
   const [filtros, setFiltros] = useState(estadoInicialFiltros);
   const [aplicarFiltrosEnCarga, setAplicarFiltrosEnCarga] = useState(false);
 
+  // --- Collapsible Filters ---
+  const [isFiltroOpen, setIsFiltroOpen] = useState(true); // Estado para controlar visibilidad
+
+  const toggleFiltro = () => {
+    setIsFiltroOpen(!isFiltroOpen);
+  };
+  // --- Fin Collapsible Filters ---
+
+
   const cargarDatos = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -136,85 +145,104 @@ function Transacciones() {
              <h2 className="text-xl font-semibold">Historial de Transacciones</h2>
          </div>
 
-        <div className="mb-6 p-4 border border-gray-700 rounded-md bg-gray-800">
-            <h3 className="text-lg font-medium mb-4 text-gray-300">▼ Filtrar Transacciones</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
-                <input
-                    type="date"
-                    name="fechaDesde"
-                    value={filtros.fechaDesde}
-                    onChange={handleFiltroChange}
-                    className="input-dark-theme"
-                    aria-label="Fecha desde"
-                />
-                <input
-                    type="date"
-                    name="fechaHasta"
-                    value={filtros.fechaHasta}
-                    onChange={handleFiltroChange}
-                    className="input-dark-theme"
-                    aria-label="Fecha hasta"
-                />
-                <select
-                    name="tipo"
-                    value={filtros.tipo}
-                    onChange={handleFiltroChange}
-                    className="input-dark-theme"
-                    aria-label="Filtrar por tipo"
-                >
-                    <option value="">-- Todos Tipos --</option>
-                    {tiposFiltro.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select
-                    name="categoria"
-                    value={filtros.categoria}
-                    onChange={handleFiltroChange}
-                    className="input-dark-theme"
-                    aria-label="Filtrar por categoría"
-                >
-                    <option value="">-- Todas Cat. --</option>
-                    {categoriasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <select
-                    name="cartera"
-                    value={filtros.cartera}
-                    onChange={handleFiltroChange}
-                    className="input-dark-theme"
-                    aria-label="Filtrar por cartera"
-                >
-                    <option value="">-- Todas Cart. --</option>
-                    {carterasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input
-                    type="text"
-                    name="descripcion"
-                    value={filtros.descripcion}
-                    onChange={handleFiltroChange}
-                    placeholder="Buscar descripción..."
-                    className="input-dark-theme"
-                    aria-label="Filtrar por descripción"
-                />
-            </div>
-            {/* Contenedor de botones: flex-col por defecto, sm:flex-row desde pantalla pequeña */}
-            <div className="flex flex-col space-y-2 sm:flex-row sm:justify-end sm:space-y-0 sm:space-x-3">
-                <button
-                    onClick={handleAplicarFiltros}
-                     // Botones ocupan todo el ancho en móvil (w-full), ancho auto desde sm
-                    className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
-                >
-                    <span className="mr-2" aria-hidden="true">🔍</span> Filtrar
-                </button>
-                 <button
-                    onClick={handleLimpiarFiltros}
-                    className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
-                >
-                     <span className="mr-2" aria-hidden="true">🧹</span> Limpiar
-                </button>
-                 <button className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150" disabled>
-                    <span className="mr-2" aria-hidden="true">⬇️</span> Exportar CSV
-                </button>
+        {/* --- Área de Filtros Modificada --- */}
+        <div className="mb-6 border border-gray-700 rounded-md bg-gray-800 overflow-hidden"> {/* overflow-hidden para transiciones */}
+            {/* Botón para colapsar/expandir */}
+            <button
+                onClick={toggleFiltro}
+                className="w-full flex justify-between items-center p-4 text-left text-lg font-medium text-gray-300 hover:bg-gray-700 focus:outline-none"
+                aria-expanded={isFiltroOpen}
+            >
+                <span>Filtrar Transacciones</span>
+                {/* Cambia el emoji indicador */}
+                <span className={`transform transition-transform duration-200 ${isFiltroOpen ? 'rotate-180' : 'rotate-0'}`}>▼</span>
+            </button>
+
+            {/* Contenido de los filtros (condicional) */}
+            {/* Añadimos clases de transición (opcional pero recomendado) */}
+            <div className={`transition-all duration-300 ease-in-out ${isFiltroOpen ? 'max-h-screen opacity-100 p-4' : 'max-h-0 opacity-0 p-0'}`}>
+              {isFiltroOpen && ( // Renderiza el contenido solo si está abierto (mejor para rendimiento y transiciones)
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
+                      <input
+                          type="date"
+                          name="fechaDesde"
+                          value={filtros.fechaDesde}
+                          onChange={handleFiltroChange}
+                          className="input-dark-theme"
+                          aria-label="Fecha desde"
+                      />
+                      <input
+                          type="date"
+                          name="fechaHasta"
+                          value={filtros.fechaHasta}
+                          onChange={handleFiltroChange}
+                          className="input-dark-theme"
+                          aria-label="Fecha hasta"
+                      />
+                      <select
+                          name="tipo"
+                          value={filtros.tipo}
+                          onChange={handleFiltroChange}
+                          className="input-dark-theme"
+                          aria-label="Filtrar por tipo"
+                      >
+                          <option value="">-- Todos Tipos --</option>
+                          {tiposFiltro.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <select
+                          name="categoria"
+                          value={filtros.categoria}
+                          onChange={handleFiltroChange}
+                          className="input-dark-theme"
+                          aria-label="Filtrar por categoría"
+                      >
+                          <option value="">-- Todas Cat. --</option>
+                          {categoriasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <select
+                          name="cartera"
+                          value={filtros.cartera}
+                          onChange={handleFiltroChange}
+                          className="input-dark-theme"
+                          aria-label="Filtrar por cartera"
+                      >
+                          <option value="">-- Todas Cart. --</option>
+                          {carterasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input
+                          type="text"
+                          name="descripcion"
+                          value={filtros.descripcion}
+                          onChange={handleFiltroChange}
+                          placeholder="Buscar descripción..."
+                          className="input-dark-theme"
+                          aria-label="Filtrar por descripción"
+                      />
+                  </div>
+                  <div className="flex flex-col space-y-2 sm:flex-row sm:justify-end sm:space-y-0 sm:space-x-3">
+                      <button
+                          onClick={handleAplicarFiltros}
+                          className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
+                      >
+                          <span className="mr-2" aria-hidden="true">🔍</span> Filtrar
+                      </button>
+                       <button
+                          onClick={handleLimpiarFiltros}
+                          className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
+                      >
+                           <span className="mr-2" aria-hidden="true">🧹</span> Limpiar
+                      </button>
+                       <button className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150" disabled>
+                          <span className="mr-2" aria-hidden="true">⬇️</span> Exportar CSV
+                      </button>
+                  </div>
+                </>
+              )}
             </div>
         </div>
+        {/* --- Fin Área de Filtros Modificada --- */}
+
 
         {cargando && <div className="text-center text-blue-400 my-4">Cargando...</div>}
 
