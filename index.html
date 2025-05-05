@@ -1,10 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="es"> {/* Cambia el idioma a español si no lo estaba */}
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    {/* Viewport (ya deberías tenerlo para responsive) */}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+
+    {/* --- Añadidos para PWA --- */}
+    {/* Enlace al Manifest (Vite lo inyectará, pero ponerlo no hace daño) */}
+    <link rel="manifest" href="/manifest.webmanifest">
+    {/* Color de la barra de estado/título en móviles */}
+    <meta name="theme-color" content="#111827"> {/* Debe coincidir con theme_color del manifest */}
+    {/* Ícono para iOS (opcional pero recomendado) */}
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    {/* --- Fin Añadidos para PWA --- */}
+
+    {/* Favicon (ya deberías tener algo similar) */}
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" /> {/* O tu propio favicon */}
+
+    <title>Finanzas Personales</title> {/* O el título que prefieras */}
   </head>
   <body>
     <div id="root"></div>
