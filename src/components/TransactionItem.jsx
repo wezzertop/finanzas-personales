@@ -1,16 +1,14 @@
 import React from 'react';
-import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { LuPencil, LuTrash2 } from "react-icons/lu"; // Mantenemos iconos aquí por ahora
 
 function TransactionItem({ transaccion, onEdit, onDelete }) {
 
   const formatearFecha = (fechaIso) => {
     if (!fechaIso) return 'N/A';
     try {
-      // Intentamos usar la fecha directamente si ya es YYYY-MM-DD
       if (typeof fechaIso === 'string' && fechaIso.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return fechaIso;
       }
-      // Si no, la convertimos desde ISO
       const fecha = new Date(fechaIso);
       const year = fecha.getFullYear();
       const month = (fecha.getMonth() + 1).toString().padStart(2, '0');
@@ -28,6 +26,11 @@ function TransactionItem({ transaccion, onEdit, onDelete }) {
 
   const colorMonto = transaccion.tipo === 'Ingreso' ? 'text-green-400' : 'text-red-400';
 
+  // Accedemos a los nombres a través de los objetos anidados
+  // Usamos optional chaining (?.) por si la relación es NULL
+  const nombreCategoria = transaccion.categoria?.nombre || 'N/A';
+  const nombreCartera = transaccion.cartera?.nombre || 'N/A';
+
   return (
     <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600">
       <td className={`px-5 py-3 font-medium whitespace-nowrap ${colorMonto}`}>
@@ -43,13 +46,12 @@ function TransactionItem({ transaccion, onEdit, onDelete }) {
         {transaccion.tipo}
       </td>
       <td className="px-5 py-3 text-gray-400 hidden md:table-cell">
-        {transaccion.categoria || 'N/A'}
+        {nombreCategoria} {/* Mostrar nombre obtenido del join */}
       </td>
       <td className="px-5 py-3 text-gray-400 hidden lg:table-cell">
-        {transaccion.cartera || 'N/A'}
+        {nombreCartera} {/* Mostrar nombre obtenido del join */}
       </td>
       <td className="px-5 py-3 text-gray-400 hidden md:table-cell">
-         {/* Usamos la columna 'fecha' si existe, si no 'fecha_creacion' */}
         {formatearFecha(transaccion.fecha || transaccion.fecha_creacion)}
       </td>
       <td className="px-5 py-3 text-center whitespace-nowrap">

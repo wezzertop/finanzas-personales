@@ -1,8 +1,7 @@
 import React from 'react';
 
-// Recibe la función para cerrar como prop
-function Sidebar({ closeMobileMenu }) {
-  const activeItem = 'Transacciones';
+// Recibe userEmail como nueva prop
+function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
 
   const menuItems = [
     { name: 'Dashboard', emoji: '📊' },
@@ -10,25 +9,19 @@ function Sidebar({ closeMobileMenu }) {
     { name: 'Categorías', emoji: '🏷️' },
     { name: 'Gráficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
-    { name: 'Salir', emoji: '🚪', isBottom: true },
+    // Separamos Salir para poner el email antes
+    // { name: 'Salir', emoji: '🚪', isBottom: true },
   ];
 
-  // Función para manejar clics en enlaces (cierra el menú en móvil)
-  const handleLinkClick = () => {
-    if (closeMobileMenu) { // Solo llama si la función existe (estamos en móvil)
-      closeMobileMenu();
-    }
-    // Aquí iría la lógica de navegación real si usaras un router
+  const handleLinkClick = (pageName) => {
+    navigateTo(pageName);
   };
 
-
   return (
-    <aside className="w-full h-full bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg"> {/* w-full/h-full para ocupar el contenedor fijo */}
-      {/* Encabezado con Título y Botón de Cierre (visible en móvil) */}
+    <aside className="w-full h-full bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-2xl font-bold text-white">Finanzas</h1>
-        {/* Botón de cierre solo visible en pantallas menores a 'md' */}
-        {closeMobileMenu && ( // Mostrar solo si la prop existe
+        {closeMobileMenu && (
           <button
             onClick={closeMobileMenu}
             className="text-gray-400 hover:text-white md:hidden"
@@ -41,47 +34,45 @@ function Sidebar({ closeMobileMenu }) {
         )}
       </div>
 
+      {/* Menú Principal */}
       <nav className="flex-grow">
         <ul>
-          {menuItems.filter(item => !item.isBottom).map((item) => (
+          {menuItems.map((item) => ( // Ya no filtramos por isBottom aquí
             <li key={item.name} className="mb-3">
-              <a
-                href="#"
-                onClick={handleLinkClick} // Cierra menú al hacer clic
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
-                  activeItem === item.name
+              <button
+                onClick={() => handleLinkClick(item.name)}
+                className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors duration-200 text-left ${
+                  currentPage === item.name
                     ? 'bg-green-600 text-white shadow-md'
                     : 'hover:bg-gray-700 hover:text-white'
                 }`}
               >
                 <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">{item.emoji}</span>
                 <span>{item.name}</span>
-              </a>
+              </button>
             </li>
           ))}
         </ul>
       </nav>
 
-      <nav>
-        <ul>
-         {menuItems.filter(item => item.isBottom).map((item) => (
-            <li key={item.name} className="mb-3">
-              <a
-                href="#"
-                onClick={handleLinkClick} // Cierra menú al hacer clic
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors duration-200 ${
-                  activeItem === item.name
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'hover:bg-gray-700 hover:text-white'
-                }`}
-              >
-                <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">{item.emoji}</span>
-                <span>{item.name}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Sección Inferior: Email y Botón Salir */}
+      <div className="mt-auto pt-4 border-t border-gray-700"> {/* mt-auto empuja al fondo, pt-4 y borde para separar */}
+        {/* Muestra el email del usuario si existe */}
+        {userEmail && (
+            <div className="px-4 py-2 mb-2 text-xs text-gray-400 truncate" title={userEmail}> {/* truncate para emails largos */}
+                Conectado como: <br/>
+                <span className="font-medium text-gray-300">{userEmail}</span>
+            </div>
+        )}
+        {/* Botón Salir */}
+        <button
+            onClick={() => handleLinkClick('Salir')}
+            className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors duration-200 text-left hover:bg-gray-700 hover:text-white`}
+        >
+            <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">🚪</span>
+            <span>Salir</span>
+        </button>
+      </div>
     </aside>
   );
 }
