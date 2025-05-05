@@ -1,6 +1,5 @@
 import { supabase } from './supabaseClient';
 
-// Función auxiliar para obtener el ID del usuario actual
 const getCurrentUserId = async () => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) {
@@ -11,7 +10,6 @@ const getCurrentUserId = async () => {
 };
 
 export const obtenerTransacciones = async (filtros = {}) => {
-  // RLS filtrará por usuario
   let query = supabase
     .from('transacciones')
     .select(`
@@ -64,14 +62,16 @@ export const agregarTransaccion = async (nuevaTransaccion) => {
        user_id: userId
    };
 
+   console.log("[agregarTransaccion] Objeto a insertar:", transaccionConUserId); // Log para depurar
+
   const { data, error } = await supabase
     .from('transacciones')
     .insert([transaccionConUserId])
-    .select()
+    .select() // Solo selecciona la transacción insertada, sin joins complejos
     .single();
 
   if (error) {
-    console.error("API Error (Transacciones): No se pudo agregar:", error.message);
+    console.error("API Error (Transacciones Add):", error.message);
   } else {
      console.log("API Éxito (Transacciones): Agregada con user_id:", userId);
   }
@@ -84,14 +84,14 @@ export const editarTransaccion = async (id, datosActualizados) => {
     .from('transacciones')
     .update(datosActualizados)
     .eq('id', id)
-    .select()
+    .select() // Selecciona la transacción actualizada
     .single();
 
   if (error) {
-    console.error("API Error (Transacciones): No se pudo editar:", error.message);
+    console.error("API Error (Transacciones Edit):", error.message);
   }
   return { data, error };
-};
+ };
 
 export const eliminarTransaccion = async (id) => {
   // RLS protegerá el borrado no autorizado
@@ -101,7 +101,7 @@ export const eliminarTransaccion = async (id) => {
     .eq('id', id);
 
   if (error) {
-    console.error("API Error (Transacciones): No se pudo eliminar:", error.message);
+    console.error("API Error (Transacciones Delete):", error.message);
   }
   return { data: null, error };
-};
+ };

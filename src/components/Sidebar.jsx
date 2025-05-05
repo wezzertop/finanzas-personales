@@ -5,14 +5,13 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
   const menuItems = [
     { name: 'Dashboard', emoji: '📊' },
     { name: 'Transacciones', emoji: '🔄' },
+    { name: 'Calendario', emoji: '🗓️' }, // <-- NUEVO ITEM
     { name: 'Categorías', emoji: '🏷️' },
     { name: 'Gráficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
   ];
 
   const handleLinkClick = (pageName) => {
-    // Llama a la función navigateTo pasada desde App.jsx
-    // Esta función se encargará de llamar a handleLogout si pageName es 'Salir'
     navigateTo(pageName);
   };
 
@@ -47,7 +46,6 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
                 <span className="font-medium text-gray-300">{userEmail}</span>
             </div>
         )}
-        {/* Botón Salir: Llama a handleLinkClick con 'Salir' */}
         <button onClick={() => handleLinkClick('Salir')} className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors duration-200 text-left hover:bg-gray-700 hover:text-white`} >
             <span className="mr-3 w-5 text-center text-xl" aria-hidden="true">🚪</span>
             <span>Salir</span>
