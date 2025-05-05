@@ -1,8 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+        /* Archivo: src/index.css */
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
 
+        /* Estilos base para el tema oscuro */
+        html, body {
+          @apply bg-gray-800 text-gray-200; /* Fondo oscuro, texto claro por defecto */
+          font-family: 'Inter', sans-serif; /* O la fuente que prefieras */
+        }
 
-body {
-  @apply font-sans bg-gray-100 text-gray-900;
-}
+        /* Ajuste para que los inputs y selects no hereden el color de texto global directamente */
+        input, select, textarea {
+           @apply text-gray-900; /* Texto oscuro dentro de los campos de formulario por defecto */
+        }
+
+        /* Puedes añadir otros estilos globales aquí */
+
+        

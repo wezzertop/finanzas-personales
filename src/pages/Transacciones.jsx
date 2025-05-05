@@ -1,164 +1,262 @@
-// Archivo: src/pages/Transacciones.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
-import TransactionForm from '../components/TransactionForm'; // Importaremos el formulario
-import TransactionList from '../components/TransactionList'; // Importaremos la lista
+import TransactionForm from '../components/TransactionForm';
+import TransactionList from '../components/TransactionList';
 import {
   obtenerTransacciones,
   agregarTransaccion,
   editarTransaccion,
   eliminarTransaccion
-} from '../lib/transaccionesApi'; // Importamos nuestras funciones API
+} from '../lib/transaccionesApi';
+
+const tiposFiltro = ['Ingreso', 'Egreso'];
+const categoriasFiltro = ['Comida', 'Transporte', 'Salario', 'Entretenimiento', 'Servicios', 'Otros'];
+const carterasFiltro = ['Efectivo', 'Banco Principal', 'Tarjeta Crédito', 'Ahorros'];
 
 function Transacciones() {
-  // --- Estados del Componente ---
-  const [transacciones, setTransacciones] = useState([]); // Almacena la lista de transacciones
-  const [transaccionAEditar, setTransaccionAEditar] = useState(null); // Almacena la transacción que se está editando
-  const [cargando, setCargando] = useState(true); // Indica si se están cargando los datos
-  const [error, setError] = useState(null); // Almacena mensajes de error
+  const [transacciones, setTransacciones] = useState([]);
+  const [transaccionAEditar, setTransaccionAEditar] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
 
-  // --- Efecto para Cargar Datos Iniciales ---
-  // useCallback envuelve la función para asegurar que no cambie innecesariamente
+  const estadoInicialFiltros = {
+    fechaDesde: '',
+    fechaHasta: '',
+    tipo: '',
+    categoria: '',
+    cartera: '',
+    descripcion: ''
+  };
+  const [filtros, setFiltros] = useState(estadoInicialFiltros);
+  const [aplicarFiltrosEnCarga, setAplicarFiltrosEnCarga] = useState(false);
+
   const cargarDatos = useCallback(async () => {
-    console.log("PAGE: Cargando datos iniciales...");
     setCargando(true);
-    setError(null); // Limpia errores previos
-    try {
-      const { data, error: errorFetch } = await obtenerTransacciones();
-      if (errorFetch) {
-        throw errorFetch; // Lanza el error para que sea capturado por el catch
-      }
-      setTransacciones(data || []); // Si data es null/undefined, usa un array vacío
-      console.log("PAGE: Datos cargados:", data);
-    } catch (err) {
-      console.error("PAGE Error: Falló la carga de transacciones:", err);
-      setError(`Error al cargar transacciones: ${err.message || 'Error desconocido'}`);
-      setTransacciones([]); // Asegura que transacciones sea un array vacío en caso de error
-    } finally {
-      setCargando(false); // Termina la carga (éxito o error)
-    }
-  }, []); // El array vacío [] significa que `cargarDatos` no depende de props o estado externo
+    setError(null);
+    const filtrosParaApi = aplicarFiltrosEnCarga ? filtros : {};
 
-  // useEffect que llama a cargarDatos solo cuando el componente se monta
+    try {
+      const { data, error: errorFetch } = await obtenerTransacciones(filtrosParaApi);
+      if (errorFetch) throw errorFetch;
+      setTransacciones(data || []);
+    } catch (err) {
+      setError(`Error al cargar: ${err.message || 'Desconocido'}`);
+      setTransacciones([]);
+    } finally {
+      setCargando(false);
+    }
+  }, [aplicarFiltrosEnCarga, filtros]);
+
   useEffect(() => {
     cargarDatos();
-  }, [cargarDatos]); // Depende de `cargarDatos` (que está envuelto en useCallback)
+  }, [cargarDatos]);
 
-  // --- Manejadores de Acciones ---
-
-  const handleAgregar = async (nuevaTransaccion) => {
-    console.log("PAGE: Intentando agregar:", nuevaTransaccion);
-    setError(null); // Limpia errores anteriores
+   const handleAgregar = async (nuevaTransaccion) => {
+    setError(null);
     try {
       const { data, error: errorAdd } = await agregarTransaccion(nuevaTransaccion);
       if (errorAdd) throw errorAdd;
-      // Actualiza el estado añadiendo la nueva transacción al PRINCIPIO de la lista
-      setTransacciones(prev => [data, ...prev]);
-      console.log("PAGE: Transacción agregada exitosamente");
+      cargarDatos();
     } catch (err) {
-      console.error("PAGE Error: Falló al agregar transacción:", err);
       setError(`Error al agregar: ${err.message || 'Error desconocido'}`);
     }
   };
 
-  const handleSeleccionarParaEditar = (transaccion) => {
-    console.log("PAGE: Seleccionado para editar:", transaccion);
-    setTransaccionAEditar(transaccion); // Pone la transacción en el estado para editar
+   const handleSeleccionarParaEditar = (transaccion) => {
+    setTransaccionAEditar(transaccion);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelarEdicion = () => {
-    console.log("PAGE: Cancelando edición");
-    setTransaccionAEditar(null); // Limpia el estado de edición
+   const handleCancelarEdicion = () => {
+    setTransaccionAEditar(null);
   };
 
-  const handleEditar = async (id, datosActualizados) => {
-    console.log(`PAGE: Intentando editar ID ${id}:`, datosActualizados);
+   const handleEditar = async (id, datosActualizados) => {
     setError(null);
     try {
       const { data, error: errorEdit } = await editarTransaccion(id, datosActualizados);
       if (errorEdit) throw errorEdit;
-      // Actualiza la transacción en la lista local
-      setTransacciones(prev =>
-        prev.map(t => (t.id === id ? data : t))
-      );
-      setTransaccionAEditar(null); // Limpia el modo edición
-      console.log("PAGE: Transacción editada exitosamente");
+      cargarDatos();
+      setTransaccionAEditar(null);
     } catch (err) {
-      console.error("PAGE Error: Falló al editar transacción:", err);
       setError(`Error al editar: ${err.message || 'Error desconocido'}`);
     }
   };
 
-  const handleEliminar = async (id) => {
-    console.log(`PAGE: Intentando eliminar ID ${id}`);
-    // Confirmación básica (puedes mejorarla con un modal)
+   const handleEliminar = async (id) => {
     if (!window.confirm(`¿Estás seguro de eliminar la transacción ${id}?`)) {
-      console.log("PAGE: Eliminación cancelada por el usuario");
       return;
     }
-
     setError(null);
     try {
       const { error: errorDelete } = await eliminarTransaccion(id);
       if (errorDelete) throw errorDelete;
-      // Actualiza el estado filtrando la transacción eliminada
       setTransacciones(prev => prev.filter(t => t.id !== id));
-      console.log("PAGE: Transacción eliminada exitosamente");
     } catch (err) {
-      console.error("PAGE Error: Falló al eliminar transacción:", err);
       setError(`Error al eliminar: ${err.message || 'Error desconocido'}`);
     }
   };
 
-  // --- Renderizado del Componente ---
+  const handleFiltroChange = (event) => {
+    const { name, value } = event.target;
+    setFiltros(prevFiltros => ({
+      ...prevFiltros,
+      [name]: value
+    }));
+  };
+
+  const handleAplicarFiltros = () => {
+    setAplicarFiltrosEnCarga(true);
+  };
+
+  const handleLimpiarFiltros = () => {
+    setFiltros(estadoInicialFiltros);
+    setAplicarFiltrosEnCarga(false);
+  };
+
   return (
-    <div className="container mx-auto p-4 max-w-4xl"> {/* Centrado y con ancho máximo */}
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-        Registro de Transacciones
-      </h1>
+    <div className="space-y-8">
 
-      {/* Formulario para agregar/editar */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          {transaccionAEditar ? 'Editar Transacción' : 'Agregar Nueva Transacción'}
-        </h2>
+      <section className="bg-gray-900 p-6 rounded-lg shadow-lg">
+         <div className="flex items-center mb-6 text-white">
+             <span className="mr-3 text-xl" aria-hidden="true">📝</span>
+             <h2 className="text-xl font-semibold">
+                 {transaccionAEditar ? 'Editar Transacción' : 'Registro de Transacciones'}
+             </h2>
+         </div>
         <TransactionForm
-          onSubmit={transaccionAEditar ? handleEditar : handleAgregar} // Decide qué función llamar
-          transaccionInicial={transaccionAEditar} // Pasa la transacción a editar (o null si es nueva)
-          onCancelEdit={handleCancelarEdicion} // Pasa la función para cancelar edición
+          onSubmit={transaccionAEditar ? handleEditar : handleAgregar}
+          transaccionInicial={transaccionAEditar}
+          onCancelEdit={handleCancelarEdicion}
         />
-      </div>
+      </section>
 
-       {/* Indicador de carga */}
-       {cargando && (
-         <div className="text-center text-blue-600 my-4">Cargando transacciones...</div>
-       )}
+      <section className="bg-gray-900 p-6 rounded-lg shadow-lg">
+         <div className="flex items-center mb-4 text-white">
+             <span className="mr-3 text-xl" aria-hidden="true">🧾</span>
+             <h2 className="text-xl font-semibold">Historial de Transacciones</h2>
+         </div>
 
-      {/* Mensaje de error */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+        <div className="mb-6 p-4 border border-gray-700 rounded-md bg-gray-800">
+            <h3 className="text-lg font-medium mb-4 text-gray-300">▼ Filtrar Transacciones</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
+                <input
+                    type="date"
+                    name="fechaDesde"
+                    value={filtros.fechaDesde}
+                    onChange={handleFiltroChange}
+                    className="input-dark-theme"
+                    aria-label="Fecha desde"
+                />
+                <input
+                    type="date"
+                    name="fechaHasta"
+                    value={filtros.fechaHasta}
+                    onChange={handleFiltroChange}
+                    className="input-dark-theme"
+                    aria-label="Fecha hasta"
+                />
+                <select
+                    name="tipo"
+                    value={filtros.tipo}
+                    onChange={handleFiltroChange}
+                    className="input-dark-theme"
+                    aria-label="Filtrar por tipo"
+                >
+                    <option value="">-- Todos Tipos --</option>
+                    {tiposFiltro.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select
+                    name="categoria"
+                    value={filtros.categoria}
+                    onChange={handleFiltroChange}
+                    className="input-dark-theme"
+                    aria-label="Filtrar por categoría"
+                >
+                    <option value="">-- Todas Cat. --</option>
+                    {categoriasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                    name="cartera"
+                    value={filtros.cartera}
+                    onChange={handleFiltroChange}
+                    className="input-dark-theme"
+                    aria-label="Filtrar por cartera"
+                >
+                    <option value="">-- Todas Cart. --</option>
+                    {carterasFiltro.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input
+                    type="text"
+                    name="descripcion"
+                    value={filtros.descripcion}
+                    onChange={handleFiltroChange}
+                    placeholder="Buscar descripción..."
+                    className="input-dark-theme"
+                    aria-label="Filtrar por descripción"
+                />
+            </div>
+            {/* Contenedor de botones: flex-col por defecto, sm:flex-row desde pantalla pequeña */}
+            <div className="flex flex-col space-y-2 sm:flex-row sm:justify-end sm:space-y-0 sm:space-x-3">
+                <button
+                    onClick={handleAplicarFiltros}
+                     // Botones ocupan todo el ancho en móvil (w-full), ancho auto desde sm
+                    className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
+                >
+                    <span className="mr-2" aria-hidden="true">🔍</span> Filtrar
+                </button>
+                 <button
+                    onClick={handleLimpiarFiltros}
+                    className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150"
+                >
+                     <span className="mr-2" aria-hidden="true">🧹</span> Limpiar
+                </button>
+                 <button className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150" disabled>
+                    <span className="mr-2" aria-hidden="true">⬇️</span> Exportar CSV
+                </button>
+            </div>
         </div>
-      )}
 
+        {cargando && <div className="text-center text-blue-400 my-4">Cargando...</div>}
 
-      {/* Lista de transacciones (solo si no está cargando y hay transacciones) */}
-      {!cargando && transacciones.length === 0 && !error && (
-        <p className="text-center text-gray-500 my-4">No hay transacciones registradas todavía.</p>
-      )}
-      {!cargando && transacciones.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Historial</h2>
+        {error && (
+          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong>Error: </strong><span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
+        {!cargando && transacciones.length === 0 && !error && (
+          <p className="text-center text-gray-500 my-4">
+            {aplicarFiltrosEnCarga ? 'No se encontraron transacciones con los filtros aplicados.' : 'No hay transacciones registradas todavía.'}
+          </p>
+        )}
+        {!cargando && transacciones.length > 0 && (
           <TransactionList
             transacciones={transacciones}
-            onEdit={handleSeleccionarParaEditar} // Pasa la función para iniciar la edición
-            onDelete={handleEliminar} // Pasa la función para eliminar
+            onEdit={handleSeleccionarParaEditar}
+            onDelete={handleEliminar}
           />
-        </div>
-      )}
+        )}
+         {!cargando && transacciones.length > 0 && (
+             <div className="mt-4 text-right text-sm text-gray-400">
+                 Mostrando {transacciones.length} transacciones.
+             </div>
+         )}
+      </section>
     </div>
   );
+}
+
+const inputDarkTheme = `
+  block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md
+  text-gray-200 placeholder-gray-500 text-sm
+  focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+  disabled:bg-gray-800 disabled:cursor-not-allowed
+`;
+if (!document.querySelector('style#input-dark-theme-style')) {
+    const style = document.createElement('style');
+    style.id = 'input-dark-theme-style';
+    style.innerHTML = `.input-dark-theme { @apply ${inputDarkTheme.replace(/\s+/g, ' ')} }`;
+    document.head.appendChild(style);
 }
 
 export default Transacciones;

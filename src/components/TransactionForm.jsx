@@ -1,93 +1,99 @@
-// Archivo: src/components/TransactionForm.jsx
-
 import React, { useState, useEffect } from 'react';
 
-// Opciones predefinidas (podrían venir de la BD en el futuro)
 const tipos = ['Ingreso', 'Egreso'];
 const categoriasBase = ['Comida', 'Transporte', 'Salario', 'Entretenimiento', 'Servicios', 'Otros'];
 const carterasBase = ['Efectivo', 'Banco Principal', 'Tarjeta Crédito', 'Ahorros'];
 
 function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
-  // --- Estados del Formulario ---
   const [monto, setMonto] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [tipo, setTipo] = useState(tipos[0]); // Valor inicial: Ingreso
-  const [categoria, setCategoria] = useState(categoriasBase[0]); // Valor inicial: Comida
-  const [cartera, setCartera] = useState(carterasBase[0]); // Valor inicial: Efectivo
+  const [tipo, setTipo] = useState(tipos[0]);
+  const [categoria, setCategoria] = useState(''); // Cambiado para que "Seleccione" sea el valor inicial
+  const [cartera, setCartera] = useState('');   // Cambiado para que "Seleccione" sea el valor inicial
+  const [fecha, setFecha] = useState(''); // Añadido estado para la fecha
 
-  // --- Efecto para Cargar Datos Iniciales (cuando se edita) ---
   useEffect(() => {
     if (transaccionInicial) {
-      // Si recibimos una transacción para editar, llenamos el formulario
-      setMonto(transaccionInicial.monto || ''); // Asegura que no sea null
+      setMonto(transaccionInicial.monto || '');
       setDescripcion(transaccionInicial.descripcion || '');
       setTipo(transaccionInicial.tipo || tipos[0]);
-      setCategoria(transaccionInicial.categoria || categoriasBase[0]);
-      setCartera(transaccionInicial.cartera || carterasBase[0]);
-      console.log("FORM: Cargando datos para editar:", transaccionInicial);
+      setCategoria(transaccionInicial.categoria || '');
+      setCartera(transaccionInicial.cartera || '');
+      // Formatear fecha si viene de la BD (asumiendo formato ISO)
+      setFecha(transaccionInicial.fecha ? new Date(transaccionInicial.fecha).toISOString().split('T')[0] : '');
     } else {
-      // Si no hay transacción inicial (modo agregar), reseteamos el form
-      console.log("FORM: Reseteando formulario para agregar");
       setMonto('');
       setDescripcion('');
       setTipo(tipos[0]);
-      setCategoria(categoriasBase[0]);
-      setCartera(carterasBase[0]);
+      setCategoria('');
+      setCartera('');
+      // Fecha actual por defecto para nuevos registros
+      setFecha(new Date().toISOString().split('T')[0]);
     }
-  }, [transaccionInicial]); // Este efecto se ejecuta cada vez que `transaccionInicial` cambia
+  }, [transaccionInicial]);
 
-  // --- Manejador del Envío del Formulario ---
   const handleSubmit = (event) => {
-    event.preventDefault(); // Evita que la página se recargue
-    console.log("FORM: Enviando formulario...");
+    event.preventDefault();
 
-    // Validación simple (puedes añadir más)
     if (!monto || isNaN(parseFloat(monto)) || parseFloat(monto) <= 0) {
       alert('Por favor, ingresa un monto válido y positivo.');
       return;
     }
     if (!descripcion.trim()) {
-       alert('La descripción no puede estar vacía.');
+      alert('La descripción no puede estar vacía.');
+      return;
+    }
+     if (!categoria) {
+       alert('Por favor, selecciona una categoría.');
        return;
     }
+     if (!cartera) {
+       alert('Por favor, selecciona una cartera.');
+       return;
+    }
+     if (!fecha) {
+        alert('Por favor, selecciona una fecha.');
+        return;
+     }
+
 
     const datosTransaccion = {
-      monto: parseFloat(monto), // Convertimos a número flotante
+      monto: parseFloat(monto),
       descripcion: descripcion.trim(),
       tipo,
       categoria,
       cartera,
+      fecha, // Incluimos la fecha
     };
 
     if (transaccionInicial) {
-      // Si estábamos editando, llamamos a onSubmit con el ID y los datos
-      console.log("FORM: Llamando a onSubmit para EDITAR ID:", transaccionInicial.id);
       onSubmit(transaccionInicial.id, datosTransaccion);
     } else {
-      // Si estábamos agregando, llamamos a onSubmit solo con los datos
-      console.log("FORM: Llamando a onSubmit para AGREGAR");
       onSubmit(datosTransaccion);
     }
 
-    // Limpiar el formulario DESPUÉS de llamar a onSubmit (si es modo AGREGAR)
-    // Si es modo EDITAR, la página principal se encargará de limpiar vía `transaccionInicial`
     if (!transaccionInicial) {
-        console.log("FORM: Limpiando formulario después de agregar.");
-        setMonto('');
-        setDescripcion('');
-        setTipo(tipos[0]);
-        setCategoria(categoriasBase[0]);
-        setCartera(carterasBase[0]);
+      setMonto('');
+      setDescripcion('');
+      setTipo(tipos[0]);
+      setCategoria('');
+      setCartera('');
+      setFecha(new Date().toISOString().split('T')[0]);
     }
   };
 
-  // --- Renderizado del Formulario ---
+  const labelClasses = "block text-sm font-medium text-gray-300 mb-1";
+  const inputClasses = `
+    block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md
+    text-gray-200 placeholder-gray-500 text-sm shadow-sm
+    focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+  `;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Fila 1: Monto y Descripción */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div>
-          <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="monto" className={labelClasses}>
             Monto ($)
           </label>
           <input
@@ -95,14 +101,14 @@ function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
             id="monto"
             value={monto}
             onChange={(e) => setMonto(e.target.value)}
-            placeholder="Ej: 50.00"
-            step="0.01" // Permite decimales
+            placeholder="50.00"
+            step="0.01"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className={inputClasses}
           />
         </div>
         <div>
-          <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="descripcion" className={labelClasses}>
             Descripción
           </label>
           <input
@@ -110,18 +116,14 @@ function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
             id="descripcion"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Ej: Café con amigos"
+            placeholder="Café..."
             required
-            maxLength={100} // Límite opcional
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            maxLength={100}
+            className={inputClasses}
           />
         </div>
-      </div>
-
-      {/* Fila 2: Tipo, Categoría y Cartera */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="tipo" className={labelClasses}>
             Tipo
           </label>
           <select
@@ -129,13 +131,13 @@ function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+            className={inputClasses}
           >
             {tipos.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
-        <div>
-          <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
+         <div>
+          <label htmlFor="categoria" className={labelClasses}>
             Categoría
           </label>
           <select
@@ -143,45 +145,58 @@ function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+            className={inputClasses}
           >
+            <option value="" disabled>-- Seleccione --</option>
             {categoriasBase.map(c => <option key={c} value={c}>{c}</option>)}
-            {/* Podrías añadir una opción para 'Nueva Categoría' en el futuro */}
           </select>
         </div>
         <div>
-          <label htmlFor="cartera" className="block text-sm font-medium text-gray-700 mb-1">
-            Cartera / Cuenta
+          <label htmlFor="cartera" className={labelClasses}>
+            Cartera
           </label>
           <select
             id="cartera"
             value={cartera}
             onChange={(e) => setCartera(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white"
+            className={inputClasses}
           >
+            <option value="" disabled>-- Seleccione --</option>
             {carterasBase.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
+         <div>
+          <label htmlFor="fecha" className={labelClasses}>
+            Fecha
+          </label>
+          <input
+            type="date"
+            id="fecha"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            required
+            className={inputClasses}
+          />
+        </div>
       </div>
 
-      {/* Botones de Acción */}
-      <div className="flex justify-end space-x-3 pt-4">
-        {transaccionInicial && ( // Mostrar botón Cancelar solo si estamos editando
-            <button
-              type="button" // Importante: type="button" para que no envíe el form
-              onClick={onCancelEdit}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancelar Edición
-            </button>
-        )}
+      <div className="flex items-center justify-start pt-4 space-x-3">
         <button
           type="submit"
-          className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${transaccionInicial ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'} focus:outline-none focus:ring-2 focus:ring-offset-2`}
+          className={`px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${transaccionInicial ? 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150`}
         >
-          {transaccionInicial ? 'Guardar Cambios' : 'Agregar Transacción'}
+          {transaccionInicial ? '💾 Guardar Cambios' : '💾 Guardar Transacción'}
         </button>
+        {transaccionInicial && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-gray-500 transition duration-150"
+            >
+              Cancelar
+            </button>
+        )}
       </div>
     </form>
   );

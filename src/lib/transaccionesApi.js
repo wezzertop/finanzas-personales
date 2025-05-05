@@ -1,101 +1,118 @@
-// Archivo: src/lib/transaccionesApi.js
+    // Archivo: src/lib/transaccionesApi.js (Con Filtros)
 
-// Importamos nuestro cliente Supabase inicializado
-import { supabase } from './supabaseClient';
+    import { supabase } from './supabaseClient';
 
-// --- FUNCIÓN PARA OBTENER TODAS LAS TRANSACCIONES ---
-/**
- * Obtiene todas las transacciones de la base de datos, ordenadas por fecha de creación descendente.
- * @returns {Promise<{data: Array|null, error: Object|null}>} Un objeto con la data o el error.
- */
-export const obtenerTransacciones = async () => {
-  console.log("API: Intentando obtener transacciones...");
-  const { data, error } = await supabase
-    .from('transacciones') // De la tabla 'transacciones'
-    .select('*') // Selecciona todas las columnas (*)
-    .order('fecha_creacion', { ascending: false }); // Ordena por fecha, las más nuevas primero
+    /**
+     * Obtiene transacciones de la base de datos, opcionalmente filtradas.
+     * @param {Object} [filtros={}] - Objeto opcional con los filtros a aplicar.
+     * @param {string} [filtros.fechaDesde] - Fecha mínima (YYYY-MM-DD).
+     * @param {string} [filtros.fechaHasta] - Fecha máxima (YYYY-MM-DD).
+     * @param {string} [filtros.tipo] - 'Ingreso' o 'Egreso'.
+     * @param {string} [filtros.categoria] - Nombre de la categoría.
+     * @param {string} [filtros.cartera] - Nombre de la cartera.
+     * @param {string} [filtros.descripcion] - Texto a buscar en la descripción (case-insensitive).
+     * @returns {Promise<{data: Array|null, error: Object|null}>}
+     */
+    export const obtenerTransacciones = async (filtros = {}) => {
+      console.log("API: Intentando obtener transacciones con filtros:", filtros);
+      let query = supabase
+        .from('transacciones')
+        .select('*'); // Selecciona todas las columnas
 
-  if (error) {
-    console.error("API Error: No se pudieron obtener las transacciones:", error.message);
-  } else {
-    console.log("API Éxito: Transacciones obtenidas:", data);
-  }
-  // Devolvemos tanto la data como el error para que el componente que llame decida qué hacer
-  return { data, error };
-};
+      // Aplicar filtros si existen en el objeto 'filtros'
+      if (filtros.fechaDesde) {
+        // gte = Greater than or equal to (mayor o igual que)
+        query = query.gte('fecha', filtros.fechaDesde);
+        console.log("API: Aplicando filtro fecha >= ", filtros.fechaDesde);
+      }
+      if (filtros.fechaHasta) {
+         // lte = Less than or equal to (menor o igual que)
+        query = query.lte('fecha', filtros.fechaHasta);
+        console.log("API: Aplicando filtro fecha <= ", filtros.fechaHasta);
+      }
+      if (filtros.tipo) {
+        // eq = Equal to (igual a)
+        query = query.eq('tipo', filtros.tipo);
+        console.log("API: Aplicando filtro tipo = ", filtros.tipo);
+      }
+      if (filtros.categoria) {
+        query = query.eq('categoria', filtros.categoria);
+        console.log("API: Aplicando filtro categoria = ", filtros.categoria);
+      }
+      if (filtros.cartera) {
+        query = query.eq('cartera', filtros.cartera);
+        console.log("API: Aplicando filtro cartera = ", filtros.cartera);
+      }
+      if (filtros.descripcion && filtros.descripcion.trim() !== '') {
+        // ilike = Case-insensitive LIKE (buscar texto dentro de otro, sin importar mayúsculas/minúsculas)
+        // Usamos % para indicar que puede haber cualquier cosa antes o después del texto buscado
+        query = query.ilike('descripcion', `%${filtros.descripcion.trim()}%`);
+        console.log("API: Aplicando filtro descripción contiene (iLike) =", `%${filtros.descripcion.trim()}%`);
+      }
 
-// --- FUNCIÓN PARA AGREGAR UNA NUEVA TRANSACCIÓN ---
-/**
- * Agrega una nueva transacción a la base de datos.
- * @param {Object} nuevaTransaccion - El objeto con los datos de la transacción (monto, descripcion, tipo, categoria, cartera).
- * @returns {Promise<{data: Object|null, error: Object|null}>} Un objeto con la data insertada o el error.
- */
-export const agregarTransaccion = async (nuevaTransaccion) => {
-  console.log("API: Intentando agregar transacción:", nuevaTransaccion);
-  // No necesitamos pasar 'id' ni 'fecha_creacion', Supabase los maneja.
-  const { data, error } = await supabase
-    .from('transacciones')
-    .insert([
-      // Pasamos un array con el objeto de la nueva transacción
-      nuevaTransaccion
-    ])
-    .select() // Importante: .select() devuelve el registro recién insertado
-    .single(); // .single() asegura que recibimos un objeto, no un array (ya que insertamos uno solo)
+      // Siempre ordenar por fecha descendente (más nuevas primero) al final
+      query = query.order('fecha', { ascending: false })
+                   .order('fecha_creacion', { ascending: false }); // Desempate por fecha_creacion
 
-  if (error) {
-    console.error("API Error: No se pudo agregar la transacción:", error.message);
-  } else {
-    console.log("API Éxito: Transacción agregada:", data);
-  }
-  return { data, error };
-};
+      // Ejecutar la consulta final
+      const { data, error } = await query;
 
-// --- FUNCIÓN PARA EDITAR UNA TRANSACCIÓN EXISTENTE ---
-/**
- * Edita una transacción existente en la base de datos, identificada por su ID.
- * @param {number|string} id - El ID de la transacción a editar.
- * @param {Object} datosActualizados - Un objeto con los campos a actualizar.
- * @returns {Promise<{data: Object|null, error: Object|null}>} Un objeto con la data actualizada o el error.
- */
-export const editarTransaccion = async (id, datosActualizados) => {
-  console.log(`API: Intentando editar transacción ID: ${id}`, datosActualizados);
-  // No actualizamos 'id' ni 'fecha_creacion'
-  const { data, error } = await supabase
-    .from('transacciones')
-    .update(datosActualizados) // Pasamos los datos a actualizar
-    .eq('id', id) // Condición: donde el 'id' sea igual al que nos pasaron
-    .select() // Devuelve el registro actualizado
-    .single(); // Esperamos un solo objeto como resultado
+      if (error) {
+        console.error("API Error: No se pudieron obtener las transacciones:", error.message);
+      } else {
+        console.log(`API Éxito: Transacciones obtenidas (${data ? data.length : 0} registros):`, data);
+      }
 
-  if (error) {
-    console.error("API Error: No se pudo editar la transacción:", error.message);
-  } else {
-    console.log("API Éxito: Transacción editada:", data);
-  }
-  return { data, error };
-};
+      return { data, error };
+    };
 
-// --- FUNCIÓN PARA ELIMINAR UNA TRANSACCIÓN ---
-/**
- * Elimina una transacción de la base de datos, identificada por su ID.
- * @param {number|string} id - El ID de la transacción a eliminar.
- * @returns {Promise<{data: null, error: Object|null}>} Un objeto que solo contendrá el error si algo falla.
- */
-export const eliminarTransaccion = async (id) => {
-  console.log(`API: Intentando eliminar transacción ID: ${id}`);
-  const { error } = await supabase
-    .from('transacciones')
-    .delete() // Comando para borrar
-    .eq('id', id); // Condición: donde el 'id' sea igual al proporcionado
+    // --- Las otras funciones (agregar, editar, eliminar) permanecen igual ---
 
-  // El método delete no devuelve los datos borrados por defecto.
-  // Solo nos interesa si hubo un error.
-  if (error) {
-    console.error("API Error: No se pudo eliminar la transacción:", error.message);
-  } else {
-    console.log("API Éxito: Transacción eliminada (ID:", id, ")");
-  }
-  // Devolvemos solo el error, ya que no hay 'data' relevante en un delete exitoso.
-  // Podríamos devolver un objeto { success: !error } si quisiéramos ser más explícitos.
-  return { data: null, error };
-};
+    export const agregarTransaccion = async (nuevaTransaccion) => {
+      console.log("API: Intentando agregar transacción:", nuevaTransaccion);
+      const { data, error } = await supabase
+        .from('transacciones')
+        .insert([nuevaTransaccion])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("API Error: No se pudo agregar la transacción:", error.message);
+      } else {
+        console.log("API Éxito: Transacción agregada:", data);
+      }
+      return { data, error };
+    };
+
+    export const editarTransaccion = async (id, datosActualizados) => {
+      console.log(`API: Intentando editar transacción ID: ${id}`, datosActualizados);
+      const { data, error } = await supabase
+        .from('transacciones')
+        .update(datosActualizados)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("API Error: No se pudo editar la transacción:", error.message);
+      } else {
+        console.log("API Éxito: Transacción editada:", data);
+      }
+      return { data, error };
+    };
+
+    export const eliminarTransaccion = async (id) => {
+      console.log(`API: Intentando eliminar transacción ID: ${id}`);
+      const { error } = await supabase
+        .from('transacciones')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("API Error: No se pudo eliminar la transacción:", error.message);
+      } else {
+        console.log("API Éxito: Transacción eliminada (ID:", id, ")");
+      }
+      return { data: null, error };
+    };
+    

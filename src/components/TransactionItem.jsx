@@ -1,78 +1,74 @@
-// Archivo: src/components/TransactionItem.jsx
-
 import React from 'react';
+import { LuPencil, LuTrash2 } from "react-icons/lu";
 
 function TransactionItem({ transaccion, onEdit, onDelete }) {
-  // Función para formatear la fecha (puedes mejorarla con librerías como date-fns)
+
   const formatearFecha = (fechaIso) => {
     if (!fechaIso) return 'N/A';
     try {
+      // Intentamos usar la fecha directamente si ya es YYYY-MM-DD
+      if (typeof fechaIso === 'string' && fechaIso.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return fechaIso;
+      }
+      // Si no, la convertimos desde ISO
       const fecha = new Date(fechaIso);
-      // Formato simple: DD/MM/YYYY
-      return fecha.toLocaleDateString('es-ES', { // 'es-ES' u otro local que prefieras
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
+      const year = fecha.getFullYear();
+      const month = (fecha.getMonth() + 1).toString().padStart(2, '0');
+      const day = fecha.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
     } catch (e) {
-      console.error("Error formateando fecha:", e);
-      return 'Fecha inválida';
+      return 'Inválida';
     }
   };
 
-  // Función para formatear el monto como moneda
    const formatearMoneda = (monto) => {
     if (typeof monto !== 'number') return 'N/A';
-    // Puedes personalizar el locale y opciones según necesites (ej. 'en-US', currency: 'USD')
     return monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
    };
 
-  // Determina el color basado en el tipo de transacción
-  const colorMonto = transaccion.tipo === 'Ingreso' ? 'text-green-600' : 'text-red-600';
+  const colorMonto = transaccion.tipo === 'Ingreso' ? 'text-green-400' : 'text-red-400';
 
   return (
-    <tr className="hover:bg-gray-50">
-       {/* Fecha (oculta en móvil) */}
-      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
-        {formatearFecha(transaccion.fecha_creacion)}
+    <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600">
+      <td className={`px-5 py-3 font-medium whitespace-nowrap ${colorMonto}`}>
+         {transaccion.tipo === 'Ingreso' ? '+' : '-'} {formatearMoneda(Math.abs(transaccion.monto))}
       </td>
-      {/* Descripción */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{transaccion.descripcion}</div>
-        {/* Mostramos tipo y categoría en móvil debajo de la descripción */}
-        <div className="text-xs text-gray-500 md:hidden">
-            {transaccion.tipo} - {transaccion.categoria}
+      <td className="px-5 py-3 text-gray-300">
+        {transaccion.descripcion}
+        <div className="text-xs text-gray-500 sm:hidden">
+             {transaccion.tipo}
         </div>
       </td>
-      {/* Monto */}
-      <td className={`px-4 py-3 whitespace-nowrap text-sm font-semibold ${colorMonto}`}>
-        {/* Muestra símbolo + o - */}
-        {transaccion.tipo === 'Ingreso' ? '+' : '-'} {formatearMoneda(Math.abs(transaccion.monto))}
+      <td className="px-5 py-3 text-gray-400 hidden sm:table-cell">
+        {transaccion.tipo}
       </td>
-      {/* Categoría (oculta en móvil pequeño) */}
-      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
-        {transaccion.categoria}
+      <td className="px-5 py-3 text-gray-400 hidden md:table-cell">
+        {transaccion.categoria || 'N/A'}
       </td>
-       {/* Cartera (oculta en móvil y tablet) */}
-      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-        {transaccion.cartera}
+      <td className="px-5 py-3 text-gray-400 hidden lg:table-cell">
+        {transaccion.cartera || 'N/A'}
       </td>
-      {/* Acciones */}
-      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
-        <button
-          onClick={() => onEdit(transaccion)}
-          className="text-indigo-600 hover:text-indigo-900 transition duration-150 ease-in-out"
-          aria-label={`Editar ${transaccion.descripcion}`} // Accesibilidad
-        >
-          Editar
-        </button>
-        <button
-          onClick={() => onDelete(transaccion.id)}
-          className="text-red-600 hover:text-red-900 transition duration-150 ease-in-out"
-          aria-label={`Eliminar ${transaccion.descripcion}`} // Accesibilidad
-        >
-          Borrar
-        </button>
+      <td className="px-5 py-3 text-gray-400 hidden md:table-cell">
+         {/* Usamos la columna 'fecha' si existe, si no 'fecha_creacion' */}
+        {formatearFecha(transaccion.fecha || transaccion.fecha_creacion)}
+      </td>
+      <td className="px-5 py-3 text-center whitespace-nowrap">
+        <div className="flex justify-center items-center space-x-2">
+            <button
+              onClick={() => onEdit(transaccion)}
+              className="p-1.5 text-yellow-400 hover:text-yellow-300 bg-gray-700 hover:bg-gray-500 rounded transition duration-150 ease-in-out"
+              aria-label={`Editar ${transaccion.descripcion}`}
+            >
+              <LuPencil className="w-4 h-4"/>
+            </button>
+            <button
+              onClick={() => onDelete(transaccion.id)}
+              className="p-1.5 text-red-500 hover:text-red-400 bg-gray-700 hover:bg-gray-500 rounded transition duration-150 ease-in-out"
+              aria-label={`Eliminar ${transaccion.descripcion}`}
+            >
+              <LuTrash2 className="w-4 h-4"/>
+            </button>
+        </div>
       </td>
     </tr>
   );
