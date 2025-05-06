@@ -1,26 +1,26 @@
 import React from 'react';
 
-function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
+function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session }) {
 
   const menuItems = [
     { name: 'Dashboard', emoji: '📊' },
     { name: 'Transacciones', emoji: '🔄' },
-    { name: 'Recurring', emoji: '🔁' }, // <-- NUEVO ITEM (Transacciones Recurrentes)
+    { name: 'Recurring', emoji: '🔁' },
     { name: 'Calendario', emoji: '🗓️' },
-    { name: 'Presupuestos', emoji: '🎯' }, // <-- NUEVO ITEM
+    { name: 'Presupuestos', emoji: '🎯' },
     { name: 'Categorías', emoji: '🏷️' },
     { name: 'Graficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
-    { name: 'Configuracion', emoji: '⚙️' }, // <-- Asegúrate que sea este nombre exacto
+    { name: 'Configuracion', emoji: '⚙️' },
   ];
 
-  const handleLinkClick = (pageName) => {
-    navigateTo(pageName);
-  };
+  const handleLinkClick = (pageName) => { navigateTo(pageName); };
 
   return (
+    // Contenedor principal flex-col con altura completa
     <aside className="w-full h-full bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg">
-      <div className="flex justify-between items-center mb-10">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-10 flex-shrink-0"> {/* Evita que el header se encoja */}
         <h1 className="text-2xl font-bold text-white">Finanzas</h1>
         {closeMobileMenu && (
           <button onClick={closeMobileMenu} className="text-gray-400 hover:text-white md:hidden" aria-label="Cerrar menú">
@@ -29,7 +29,9 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
         )}
       </div>
 
-      <nav className="flex-grow">
+      {/* Navegación Principal - AHORA CON SCROLL */}
+      {/* flex-grow hace que ocupe el espacio, overflow-y-auto permite scroll si es necesario */}
+      <nav className="flex-grow overflow-y-auto mb-4"> {/* Añadido overflow y margen inferior */}
         <ul>
           {menuItems.map((item) => (
             <li key={item.name} className="mb-3">
@@ -42,7 +44,9 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
         </ul>
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-gray-700">
+      {/* Footer: Email y Salir */}
+      {/* mt-auto ya no es necesario si el nav tiene overflow */}
+      <div className="pt-4 border-t border-gray-700 flex-shrink-0"> {/* Evita que el footer se encoja */}
         {userEmail && (
             <div className="px-4 py-2 mb-2 text-xs text-gray-400 truncate" title={userEmail}>
                 Conectado como: <br/>
