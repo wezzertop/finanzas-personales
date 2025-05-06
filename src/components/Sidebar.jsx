@@ -8,9 +8,12 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session 
     { name: 'Recurring', emoji: '🔁' },
     { name: 'Calendario', emoji: '🗓️' },
     { name: 'Presupuestos', emoji: '🎯' },
+    { name: 'Objetivos', emoji: '🏆' }, // <-- NUEVO ITEM
+    { name: 'Informes', emoji: '📄' }, // <-- NUEVO ITEM
     { name: 'Categorías', emoji: '🏷️' },
     { name: 'Graficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
+    { name: 'Importar', emoji: '📥' }, // <-- NUEVO ITEM
     { name: 'Configuracion', emoji: '⚙️' },
   ];
 

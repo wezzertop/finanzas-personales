@@ -1,45 +1,43 @@
 import React, { useState, useEffect } from 'react';
-// Importamos las funciones API para obtener listas
 import { obtenerCarteras } from '../lib/carterasApi';
 import { obtenerCategorias } from '../lib/categoriasApi';
 
-const tipos = ['Ingreso', 'Egreso']; // Tipo sigue siendo texto directo
+// Tipos de transacción disponibles
+const tipos = ['Ingreso', 'Egreso', 'Transferencia'];
 
 function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
+  // Estados para los campos del formulario
   const [monto, setMonto] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [tipo, setTipo] = useState(tipos[0]);
-  // Estados para los IDs seleccionados
+  const [tipo, setTipo] = useState('Egreso'); // Default a Egreso
   const [categoriaId, setCategoriaId] = useState('');
-  const [carteraId, setCarteraId] = useState('');
+  const [carteraId, setCarteraId] = useState(''); // Cartera principal para Ingreso/Egreso
+  const [carteraOrigenId, setCarteraOrigenId] = useState(''); // Para Transferencia
+  const [carteraDestinoId, setCarteraDestinoId] = useState(''); // Para Transferencia
   const [fecha, setFecha] = useState('');
+  const [tagsInput, setTagsInput] = useState(''); // String de tags separados por coma
 
-  // Estados para las listas de opciones
+  // Estados para cargar listas de opciones
   const [listaCarteras, setListaCarteras] = useState([]);
   const [listaCategorias, setListaCategorias] = useState([]);
   const [loadingListas, setLoadingListas] = useState(true);
   const [errorListas, setErrorListas] = useState(null);
 
-  // Efecto para cargar las listas de carteras y categorías al montar
+  // Cargar listas de carteras y categorías al montar
   useEffect(() => {
     const cargarListas = async () => {
       setLoadingListas(true);
       setErrorListas(null);
       try {
-        // Obtenemos ambas listas en paralelo
         const [resCarteras, resCategorias] = await Promise.all([
           obtenerCarteras(),
-          obtenerCategorias() // Obtiene todas por defecto
+          obtenerCategorias() // Todas las categorías
         ]);
-
         if (resCarteras.error) throw new Error(`Carteras: ${resCarteras.error.message}`);
         if (resCategorias.error) throw new Error(`Categorías: ${resCategorias.error.message}`);
-
         setListaCarteras(resCarteras.data || []);
         setListaCategorias(resCategorias.data || []);
-
       } catch (err) {
-        console.error("FORM Error: No se pudieron cargar listas", err);
         setErrorListas(`Error cargando opciones: ${err.message}`);
         setListaCarteras([]);
         setListaCategorias([]);
@@ -48,169 +46,185 @@ function TransactionForm({ onSubmit, transaccionInicial, onCancelEdit }) {
       }
     };
     cargarListas();
-  }, []); // Se ejecuta solo una vez al montar
+  }, []); // Ejecutar solo una vez
 
-  // Efecto para rellenar el formulario al editar
+  // Rellenar el formulario cuando se pasa una transacción para editar
   useEffect(() => {
     if (transaccionInicial) {
       setMonto(transaccionInicial.monto || '');
       setDescripcion(transaccionInicial.descripcion || '');
-      setTipo(transaccionInicial.tipo || tipos[0]);
-      // Usamos los IDs que vienen en la transacción editada
+      setTipo(transaccionInicial.tipo || 'Egreso');
       setCategoriaId(transaccionInicial.categoria_id || '');
       setCarteraId(transaccionInicial.cartera_id || '');
+      setCarteraOrigenId(transaccionInicial.cartera_origen_id || '');
+      setCarteraDestinoId(transaccionInicial.cartera_destino_id || '');
       setFecha(transaccionInicial.fecha ? new Date(transaccionInicial.fecha).toISOString().split('T')[0] : '');
+      // Convertir array de tags a string para el input
+      setTagsInput(Array.isArray(transaccionInicial.tags) ? transaccionInicial.tags.join(', ') : '');
     } else {
-      // Resetear formulario para agregar
-      setMonto('');
-      setDescripcion('');
-      setTipo(tipos[0]);
-      setCategoriaId(''); // Resetear IDs
-      setCarteraId('');   // Resetear IDs
-      setFecha(new Date().toISOString().split('T')[0]);
+      resetForm(); // Limpiar si no hay transacción inicial
     }
-  }, [transaccionInicial]);
+  }, [transaccionInicial]); // Ejecutar si cambia la transacción a editar
 
-  // Filtra las categorías disponibles según el tipo de transacción seleccionado (Ingreso/Egreso)
-  const categoriasFiltradas = listaCategorias.filter(cat => cat.tipo === tipo);
+  // Función para resetear todos los campos del formulario
+  const resetForm = () => {
+      setMonto(''); setDescripcion(''); setTipo('Egreso');
+      setCategoriaId(''); setCarteraId(''); setCarteraOrigenId(''); setCarteraDestinoId('');
+      setFecha(new Date().toISOString().split('T')[0]); // Fecha actual por defecto
+      setTagsInput(''); // Limpiar input de tags
+  };
 
+  // Filtrar las categorías disponibles según el tipo de transacción seleccionado
+  const categoriasFiltradas = React.useMemo(() => {
+      if (tipo === 'Transferencia') return []; // No se usa categoría en transferencias
+      return listaCategorias.filter(cat => cat.tipo === tipo);
+  }, [listaCategorias, tipo]); // Recalcular si cambian las categorías o el tipo
+
+  // Manejar el envío del formulario
   const handleSubmit = (event) => {
-    event.preventDefault();
+    event.preventDefault(); // Evitar recarga de página
 
-    if (!monto || isNaN(parseFloat(monto)) || parseFloat(monto) <= 0) {
-      alert('Por favor, ingresa un monto válido y positivo.'); return;
-    }
-    if (!descripcion.trim()) {
-      alert('La descripción no puede estar vacía.'); return;
-    }
-    // Validar que se haya seleccionado un ID
-    if (!categoriaId) {
-       alert('Por favor, selecciona una categoría.'); return;
-    }
-    if (!carteraId) {
-       alert('Por favor, selecciona una cartera.'); return;
-    }
-    if (!fecha) {
-        alert('Por favor, selecciona una fecha.'); return;
-    }
+    // Validaciones básicas
+    if (!monto || isNaN(parseFloat(monto))) { alert('Monto inválido.'); return; }
+    if (!fecha) { alert('Fecha requerida.'); return; }
 
-    // Construimos el objeto con los IDs
-    const datosTransaccion = {
+    // Procesar tags: convertir string a array limpio
+    const tagsArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+    // Objeto base de la transacción
+    let datosTransaccion = {
       monto: parseFloat(monto),
-      descripcion: descripcion.trim(),
+      descripcion: descripcion.trim() || null,
       tipo,
-      categoria_id: parseInt(categoriaId, 10), // Aseguramos que sea número
-      cartera_id: parseInt(carteraId, 10),     // Aseguramos que sea número
       fecha,
+      tags: tagsArray, // Array de tags procesado
+      categoria_id: null, cartera_id: null, cartera_origen_id: null, cartera_destino_id: null, // Iniciar en null
     };
 
-    if (transaccionInicial) {
-      onSubmit(transaccionInicial.id, datosTransaccion);
-    } else {
-      onSubmit(datosTransaccion);
+    // Añadir/Validar campos específicos según el tipo
+    if (tipo === 'Transferencia') {
+        if (!carteraOrigenId || !carteraDestinoId) { alert('Selecciona cartera origen y destino.'); return; }
+        if (carteraOrigenId === carteraDestinoId) { alert('Carteras origen y destino deben ser diferentes.'); return; }
+        if (datosTransaccion.monto <= 0) { alert('Monto de transferencia debe ser positivo.'); return; }
+        datosTransaccion.cartera_origen_id = parseInt(carteraOrigenId, 10);
+        datosTransaccion.cartera_destino_id = parseInt(carteraDestinoId, 10);
+    } else { // Ingreso o Egreso
+        if (!categoriaId) { alert('Selecciona categoría.'); return; }
+        if (!carteraId) { alert('Selecciona cartera.'); return; }
+        if (datosTransaccion.monto <= 0) { alert('Monto debe ser positivo para Ingreso/Egreso.'); return; }
+        datosTransaccion.categoria_id = parseInt(categoriaId, 10);
+        datosTransaccion.cartera_id = parseInt(carteraId, 10);
     }
 
+    // Llamar a la función onSubmit pasada por el padre (Transacciones.jsx)
+    if (transaccionInicial) {
+      onSubmit(transaccionInicial.id, datosTransaccion); // Pasar ID si se edita
+    } else {
+      onSubmit(datosTransaccion); // Pasar solo datos si se agrega
+    }
+
+    // Limpiar formulario solo si se estaba agregando una nueva
     if (!transaccionInicial) {
-      setMonto('');
-      setDescripcion('');
-      setTipo(tipos[0]);
-      setCategoriaId(''); // Limpiar IDs
-      setCarteraId('');   // Limpiar IDs
-      setFecha(new Date().toISOString().split('T')[0]);
+      resetForm();
     }
   };
 
+  // --- Clases CSS reutilizables ---
   const labelClasses = "block text-sm font-medium text-gray-300 mb-1";
-  const inputClasses = `
-    block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md
-    text-gray-200 placeholder-gray-500 text-sm shadow-sm
-    focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-    disabled:opacity-50 disabled:cursor-not-allowed
-  `; // Añadido disabled styles
+  const inputClasses = `block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 placeholder-gray-500 text-sm shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50`;
+  const selectClasses = `${inputClasses} bg-gray-700`; // Asegurar fondo para select
+  const buttonClasses = (color = 'indigo') => `px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-${color}-600 hover:bg-${color}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-${color}-500 transition duration-150 disabled:opacity-50`;
 
-  // Mensaje de error si fallan las listas
-  if (errorListas) {
-      return <div className="text-red-400 p-4 bg-gray-800 rounded">Error cargando opciones: {errorListas}</div>;
-  }
+  // Mostrar error si falló la carga de listas
+  if (errorListas) { return <div className="text-red-400 p-4 bg-gray-800 rounded">Error cargando opciones: {errorListas}</div>; }
 
+  // Renderizado del formulario
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div>
-          <label htmlFor="monto" className={labelClasses}>Monto ($)</label>
-          <input type="number" id="monto" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="50.00" step="0.01" required className={inputClasses} />
-        </div>
-        <div>
-          <label htmlFor="descripcion" className={labelClasses}>Descripción</label>
-          <input type="text" id="descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Café..." required maxLength={100} className={inputClasses} />
-        </div>
-        <div>
-          <label htmlFor="tipo" className={labelClasses}>Tipo</label>
-          <select id="tipo" value={tipo} onChange={(e) => { setTipo(e.target.value); setCategoriaId(''); /* Resetea categoría al cambiar tipo */ }} required className={inputClasses}>
-            {tipos.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-         <div>
-          <label htmlFor="categoriaId" className={labelClasses}>Categoría</label>
-          <select
-            id="categoriaId"
-            name="categoriaId" // Añadido name
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-            required
-            className={inputClasses}
-            disabled={loadingListas || categoriasFiltradas.length === 0} // Deshabilitado si carga o no hay opciones
-          >
-            <option value="" disabled>-- Seleccione --</option>
-            {loadingListas ? (
-              <option disabled>Cargando...</option>
-            ) : (
-              categoriasFiltradas.map(cat => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)
-            )}
-             {/* Mostrar mensaje si no hay categorías para el tipo seleccionado */}
-             {!loadingListas && categoriasFiltradas.length === 0 && <option disabled>No hay categorías de {tipo}</option>}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="carteraId" className={labelClasses}>Cartera</label>
-          <select
-            id="carteraId"
-            name="carteraId" // Añadido name
-            value={carteraId}
-            onChange={(e) => setCarteraId(e.target.value)}
-            required
-            className={inputClasses}
-            disabled={loadingListas} // Deshabilitado mientras carga
-          >
-            <option value="" disabled>-- Seleccione --</option>
-             {loadingListas ? (
-              <option disabled>Cargando...</option>
-             ) : (
-               listaCarteras.map(cart => <option key={cart.id} value={cart.id}>{cart.nombre}</option>)
-             )}
-          </select>
-        </div>
-         <div>
-          <label htmlFor="fecha" className={labelClasses}>Fecha</label>
-          <input type="date" id="fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} required className={inputClasses} />
-        </div>
+      {/* Fila 1: Monto y Descripción */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div><label htmlFor="monto" className={labelClasses}>Monto</label><input type="number" id="monto" value={monto} onChange={(e) => setMonto(e.target.value)} required step="0.01" className={inputClasses} /></div>
+        <div className="sm:col-span-2"><label htmlFor="descripcion" className={labelClasses}>Descripción</label><input type="text" id="descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className={inputClasses} placeholder="Detalle del movimiento..." /></div>
       </div>
 
-      <div className="flex items-center justify-start pt-4 space-x-3">
-        <button
-          type="submit"
-          disabled={loadingListas} // Deshabilitar botón si las listas están cargando
-          className={`px-5 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${transaccionInicial ? 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          {transaccionInicial ? '💾 Guardar Cambios' : '💾 Guardar Transacción'}
+       {/* Fila 2: Tipo y campos condicionales (Categoría/Cartera o Origen/Destino) */}
+       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label htmlFor="tipo" className={labelClasses}>Tipo</label>
+                <select id="tipo" value={tipo} onChange={(e) => { setTipo(e.target.value); setCategoriaId(''); setCarteraId(''); setCarteraOrigenId(''); setCarteraDestinoId(''); }} required className={selectClasses}>
+                    {tipos.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+            </div>
+
+            {/* Campos para Ingreso/Egreso */}
+            {tipo !== 'Transferencia' && (
+                <>
+                    <div>
+                        <label htmlFor="categoriaId" className={labelClasses}>Categoría</label>
+                        <select id="categoriaId" value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} required={tipo !== 'Transferencia'} className={selectClasses} disabled={loadingListas || categoriasFiltradas.length === 0}>
+                            <option value="" disabled>-- Seleccione --</option>
+                            {loadingListas ? <option>Cargando...</option> : categoriasFiltradas.map(cat => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+                            {!loadingListas && categoriasFiltradas.length === 0 && <option disabled>No hay categorías de {tipo}</option>}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="carteraId" className={labelClasses}>Cartera</label>
+                        <select id="carteraId" value={carteraId} onChange={(e) => setCarteraId(e.target.value)} required={tipo !== 'Transferencia'} className={selectClasses} disabled={loadingListas}>
+                            <option value="" disabled>-- Seleccione --</option>
+                            {loadingListas ? <option>Cargando...</option> : listaCarteras.map(cart => <option key={cart.id} value={cart.id}>{cart.nombre}</option>)}
+                        </select>
+                    </div>
+                </>
+            )}
+
+            {/* Campos para Transferencia */}
+            {tipo === 'Transferencia' && (
+                <>
+                    <div>
+                        <label htmlFor="carteraOrigenId" className={labelClasses}>Cartera Origen</label>
+                        <select id="carteraOrigenId" value={carteraOrigenId} onChange={(e) => setCarteraOrigenId(e.target.value)} required={tipo === 'Transferencia'} className={selectClasses} disabled={loadingListas}>
+                            <option value="" disabled>-- Seleccione Origen --</option>
+                            {loadingListas ? <option>Cargando...</option> : listaCarteras.map(cart => <option key={cart.id} value={cart.id}>{cart.nombre}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="carteraDestinoId" className={labelClasses}>Cartera Destino</label>
+                        <select id="carteraDestinoId" value={carteraDestinoId} onChange={(e) => setCarteraDestinoId(e.target.value)} required={tipo === 'Transferencia'} className={selectClasses} disabled={loadingListas}>
+                            <option value="" disabled>-- Seleccione Destino --</option>
+                            {/* Excluir la cartera de origen de las opciones de destino */}
+                            {loadingListas ? <option>Cargando...</option> : listaCarteras.filter(c => c.id !== parseInt(carteraOrigenId, 10)).map(cart => <option key={cart.id} value={cart.id}>{cart.nombre}</option>)}
+                        </select>
+                    </div>
+                </>
+            )}
+       </div>
+
+       {/* Fila 3: Fecha y Tags */}
+       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div><label htmlFor="fecha" className={labelClasses}>Fecha</label><input type="date" id="fecha" value={fecha} onChange={(e) => setFecha(e.target.value)} required className={inputClasses} /></div>
+            {/* Campo Tags */}
+            <div className="sm:col-span-2">
+                <label htmlFor="tags" className={labelClasses}>Etiquetas (separadas por coma)</label>
+                <input
+                    type="text"
+                    id="tags"
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
+                    className={inputClasses}
+                    placeholder="Ej: vacaciones, importante, pendiente"
+                />
+            </div>
+       </div>
+
+      {/* Botones de Acción */}
+      <div className="flex justify-start pt-4 space-x-3">
+        <button type="submit" className={buttonClasses(transaccionInicial ? 'yellow' : 'green')} disabled={loadingListas}>
+            {transaccionInicial ? '💾 Guardar Cambios' : '💾 Guardar Transacción'}
         </button>
+        {/* Botón Cancelar solo visible al editar */}
         {transaccionInicial && (
-            <button
-              type="button"
-              onClick={onCancelEdit}
-              className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-gray-500 transition duration-150"
-            >
-              Cancelar
+            <button type="button" onClick={onCancelEdit} className={buttonClasses('gray')}>
+                Cancelar
             </button>
         )}
       </div>
