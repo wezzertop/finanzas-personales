@@ -5,10 +5,13 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail }) {
   const menuItems = [
     { name: 'Dashboard', emoji: '📊' },
     { name: 'Transacciones', emoji: '🔄' },
-    { name: 'Calendario', emoji: '🗓️' }, // <-- NUEVO ITEM
+    { name: 'Recurring', emoji: '🔁' }, // <-- NUEVO ITEM (Transacciones Recurrentes)
+    { name: 'Calendario', emoji: '🗓️' },
+    { name: 'Presupuestos', emoji: '🎯' }, // <-- NUEVO ITEM
     { name: 'Categorías', emoji: '🏷️' },
-    { name: 'Gráficos', emoji: '📈' },
+    { name: 'Graficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
+    { name: 'Configuracion', emoji: '⚙️' }, // <-- Asegúrate que sea este nombre exacto
   ];
 
   const handleLinkClick = (pageName) => {
