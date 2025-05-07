@@ -14,6 +14,7 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session 
     { name: 'Graficos', emoji: '📈' },
     { name: 'Carteras', emoji: '💰' },
     { name: 'Importar', emoji: '📥' }, // <-- NUEVO ITEM
+    { name: 'Perfil', emoji: '👤' }, // <-- NUEVO ITEM
     { name: 'Configuracion', emoji: '⚙️' },
   ];
 

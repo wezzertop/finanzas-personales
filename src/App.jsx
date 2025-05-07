@@ -16,6 +16,7 @@ import Recurring from './pages/Recurring'; // Transacciones Recurrentes
 import Objetivos from './pages/Objetivos'; // Objetivos de Ahorro
 import Importar from './pages/Importar';   // Importar CSV
 import Informes from './pages/Informes';   // Informes
+import Perfil from './pages/Perfil';     // Perfil de Usuario
 
 function App() {
   // Estado para controlar la visibilidad del menú lateral en móviles
@@ -103,10 +104,11 @@ function App() {
 
   // Función que decide qué componente de página renderizar
   const renderCurrentPage = () => {
-    // Si no hay sesión (incluso después de cargar), muestra AuthPage
+    // Si no hay sesión (incluso después de cargar), devuelve null aquí
+    // El renderizado principal se encargará de mostrar AuthPage
     if (!session) {
-         console.warn("[renderCurrentPage] No hay sesión, renderizando AuthPage.");
-        return <AuthPage />;
+         console.warn("[renderCurrentPage] No hay sesión, devolviendo null.");
+        return null;
     }
     // Pasamos la 'session' como prop a cada página
     switch (currentPage) {
@@ -121,7 +123,8 @@ function App() {
       case 'Recurring': return <Recurring session={session} />;
       case 'Objetivos': return <Objetivos session={session} />;
       case 'Importar': return <Importar session={session} />;
-      case 'Informes': return <Informes session={session} />; // Incluye Informes
+      case 'Informes': return <Informes session={session} />;
+      case 'Perfil': return <Perfil session={session} />;
       default: return <Dashboard session={session} />; // Dashboard como página por defecto si está logueado
     }
   };
@@ -131,18 +134,16 @@ function App() {
       return <div className="min-h-screen bg-gray-800 flex items-center justify-center text-white">Cargando sesión...</div>;
   }
 
-  // Si, después de cargar, no hay sesión, muestra la página de autenticación
-  if (!session) {
-    return <AuthPage />;
-  }
-
-  // Si hay sesión, muestra el layout principal de la aplicación
+  // Renderizado principal: Muestra AuthPage o el layout de la app
   return (
-    <div className="flex min-h-screen bg-gray-800 relative overflow-x-hidden">
-      {/* Renderiza Sidebars y Overlay solo si hay sesión */}
-      {session && (
-        <>
-          {/* Sidebar Escritorio (oculto en móvil) */}
+    <>
+      {!session ? (
+        // Si no hay sesión, muestra solo la página de autenticación
+        <AuthPage />
+      ) : (
+        // Si hay sesión, muestra el layout completo de la aplicación
+        <div className="flex min-h-screen bg-gray-800 relative overflow-x-hidden">
+          {/* Sidebar Escritorio */}
           <div className="hidden md:flex md:w-64 md:flex-shrink-0">
             <Sidebar
               currentPage={currentPage}
@@ -151,7 +152,7 @@ function App() {
               session={session} // Pasar sesión por si Sidebar la necesita
             />
           </div>
-          {/* Sidebar Móvil (controlado por estado) */}
+          {/* Sidebar Móvil */}
           <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
              <Sidebar
                currentPage={currentPage}
@@ -163,28 +164,26 @@ function App() {
           </div>
           {/* Overlay para cerrar menú móvil */}
           {isMobileSidebarOpen && ( <div className="fixed inset-0 bg-black opacity-50 z-20 md:hidden" onClick={toggleMobileSidebar} aria-hidden="true"></div> )}
-        </>
-      )}
 
-      {/* Contenido Principal */}
-      <div className="flex-grow overflow-auto w-full">
-         {/* Header Móvil (Solo si hay sesión) */}
-         {session && (
-           <div className="sticky top-0 z-10 bg-gray-900 md:hidden px-4 py-3 flex items-center">
-              {/* Botón Hamburguesa */}
-              <button onClick={toggleMobileSidebar} className="text-gray-300 hover:text-white focus:outline-none" aria-label="Abrir menú">
-                  <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-              </button>
-              {/* Título de la página actual */}
-              <h1 className="ml-4 text-lg font-semibold text-white">{currentPage}</h1>
-           </div>
-         )}
-        {/* Renderiza la página actual (o AuthPage si no hay sesión) */}
-        <main className="p-4 md:p-6">
-          {renderCurrentPage()}
-        </main>
-      </div>
-    </div>
+          {/* Contenido Principal */}
+          <div className="flex-grow overflow-auto w-full">
+             {/* Header Móvil */}
+             <div className="sticky top-0 z-10 bg-gray-900 md:hidden px-4 py-3 flex items-center">
+                {/* Botón Hamburguesa */}
+                <button onClick={toggleMobileSidebar} className="text-gray-300 hover:text-white focus:outline-none" aria-label="Abrir menú">
+                    <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+                {/* Título de la página actual */}
+                <h1 className="ml-4 text-lg font-semibold text-white">{currentPage}</h1>
+             </div>
+            {/* Renderiza la página actual */}
+            <main className="p-4 md:p-6">
+              {renderCurrentPage()}
+            </main>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
