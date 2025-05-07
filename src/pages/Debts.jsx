@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { obtenerCarteras } from '../lib/carterasApi'; // Para select de cartera de pago
-import { obtenerDebts, agregarDebt, editarDebt, eliminarDebt, registrarPagoDeuda } from '../lib/debtsApi'; // Importar registrarPagoDeuda
-import { obtenerOCrearCategoriaAjuste } from '../lib/categoriasApi'; // Para categoría de pago
+import { obtenerCarteras } from '../lib/carterasApi';
+import { obtenerDebts, agregarDebt, editarDebt, eliminarDebt, registrarPagoDeuda } from '../lib/debtsApi';
+import { obtenerOCrearCategoriaAjuste } from '../lib/categoriasApi';
 
 // Función auxiliar para formatear fecha YYYY-MM-DD
 const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch (e) { return ''; } };
@@ -11,8 +11,8 @@ function Debts({ session }) {
     const { currency, loadingSettings } = useSettings(); // Usar formateador del contexto si es necesario
 
     // Estados de datos
-    const [debts, setDebts] = useState([]);
-    const [carteras, setCarteras] = useState([]); // Para el select
+    const [debts, setDebts] = useState([]); // Contendrá saldo_actual
+    const [carteras, setCarteras] = useState([]);
 
     // Estados del formulario principal
     const [editandoDebt, setEditandoDebt] = useState(null);
@@ -31,7 +31,7 @@ function Debts({ session }) {
 
     // Estados para Modal de Pago
     const [showModalPago, setShowModalPago] = useState(false);
-    const [deudaParaPago, setDeudaParaPago] = useState(null); // Estado correcto para la deuda en el modal
+    const [deudaParaPago, setDeudaParaPago] = useState(null);
     const [montoPago, setMontoPago] = useState('');
     const [fechaPago, setFechaPago] = useState(formatYMD(new Date()));
     const [carteraPagoIdModal, setCarteraPagoIdModal] = useState('');
@@ -40,7 +40,21 @@ function Debts({ session }) {
     const [pagoError, setPagoError] = useState('');
 
     // Cargar datos iniciales (deudas y carteras)
-    const cargarDatos = useCallback(async () => { if (!session?.user?.id) return; setCargando(true); setError(null); try { const [resDebts, resCarteras] = await Promise.all([ obtenerDebts(), obtenerCarteras() ]); if (resDebts.error) throw new Error(`Deudas: ${resDebts.error.message}`); if (resCarteras.error) throw new Error(`Carteras: ${resCarteras.error.message}`); setDebts(resDebts.data || []); setCarteras(resCarteras.data || []); } catch (err) { setError(`Error al cargar datos: ${err.message || 'Desconocido'}`); setDebts([]); setCarteras([]); } finally { setCargando(false); } }, [session]);
+    const cargarDatos = useCallback(async () => {
+        if (!session?.user?.id) return;
+        setCargando(true); setError(null);
+        try {
+            // obtenerDebts ya trae saldo_actual
+            const [resDebts, resCarteras] = await Promise.all([ obtenerDebts(), obtenerCarteras() ]);
+            if (resDebts.error) throw new Error(`Deudas: ${resDebts.error.message}`);
+            if (resCarteras.error) throw new Error(`Carteras: ${resCarteras.error.message}`);
+            setDebts(resDebts.data || []);
+            setCarteras(resCarteras.data || []);
+            console.log("Deudas cargadas:", resDebts.data); // Verificar si saldo_actual viene
+        } catch (err) { setError(`Error al cargar datos: ${err.message || 'Desconocido'}`); setDebts([]); setCarteras([]); }
+        finally { setCargando(false); }
+    }, [session]);
+
     useEffect(() => { cargarDatos(); }, [cargarDatos]);
 
     // Resetear formulario principal
@@ -51,7 +65,21 @@ function Debts({ session }) {
     const handleCancelarEdicion = () => { resetForm(); };
 
     // Submit del formulario principal (Agregar o Editar Deuda)
-    const handleSubmit = async (event) => { event.preventDefault(); if (!session?.user?.id) { setError("Sin ID usuario."); return; } if (!nombre.trim()) { alert("Nombre requerido."); return; } if (!montoInicial || isNaN(parseFloat(montoInicial)) || parseFloat(montoInicial) <= 0) { alert("Monto inicial inválido."); return; } setError(null); setIsSubmitting(true); const userId = session.user.id; const datosDeuda = { nombre: nombre.trim(), monto_inicial: parseFloat(montoInicial), tasa_interes_anual: parseFloat(tasaInteres) || 0, pago_minimo_mensual: parseFloat(pagoMinimo) || 0, cartera_pago_id: carteraPagoIdForm || null, fecha_inicio: fechaInicio || null, notas: notas.trim() || null, }; try { if (editandoDebt) { const { data, error: e } = await editarDebt(editandoDebt.id, datosDeuda); if (e) throw e; } else { const { data, error: e } = await agregarDebt(datosDeuda, userId); if (e) throw e; } resetForm(); cargarDatos(); } catch (err) { setError(`Error al guardar: ${err.message}`); } finally { setIsSubmitting(false); } };
+    const handleSubmit = async (event) => {
+        event.preventDefault(); if (!session?.user?.id) { setError("Sin ID usuario."); return; } if (!nombre.trim()) { alert("Nombre requerido."); return; } if (!montoInicial || isNaN(parseFloat(montoInicial)) || parseFloat(montoInicial) <= 0) { alert("Monto inicial inválido."); return; } setError(null); setIsSubmitting(true); const userId = session.user.id;
+        // Al agregar/editar, el saldo_actual se inicializa/mantiene en la API/DB
+        const datosDeuda = { nombre: nombre.trim(), monto_inicial: parseFloat(montoInicial), tasa_interes_anual: parseFloat(tasaInteres) || 0, pago_minimo_mensual: parseFloat(pagoMinimo) || 0, cartera_pago_id: carteraPagoIdForm || null, fecha_inicio: fechaInicio || null, notas: notas.trim() || null, };
+        // Si se edita y se quiere resetear saldo_actual (opcional, no implementado por defecto)
+        // if (editandoDebt) datosDeuda.saldo_actual = parseFloat(montoInicial); // OJO: Esto resetea el progreso
+
+        try {
+            if (editandoDebt) { const { error: e } = await editarDebt(editandoDebt.id, datosDeuda); if (e) throw e; }
+            else { const { error: e } = await agregarDebt(datosDeuda, userId); if (e) throw e; }
+            resetForm();
+            cargarDatos(); // Recargar para ver el saldo actualizado
+        } catch (err) { setError(`Error al guardar: ${err.message}`); }
+        finally { setIsSubmitting(false); }
+    };
 
     // Eliminar Deuda
     const handleEliminarClick = async (id) => { if (!window.confirm(`¿Eliminar deuda?`)) return; setError(null); try { const { error: e } = await eliminarDebt(id); if (e) throw e; setDebts(prev => prev.filter(d => d.id !== id)); if (editandoDebt?.id === id) { resetForm(); } } catch (err) { setError(`Error al eliminar: ${err.message}`); } };
@@ -62,8 +90,8 @@ function Debts({ session }) {
 
     const handlePagoSubmit = async (event) => {
         event.preventDefault();
-        if (!deudaParaPago || !montoPago || isNaN(parseFloat(montoPago)) || parseFloat(montoPago) <= 0 || !fechaPago || !carteraPagoIdModal) { setPagoError("Completa los campos requeridos con valores válidos."); return; }
-        if (!session?.user?.id) { setPagoError("Error de sesión."); return; }
+        if (!deudaParaPago || !montoPago || isNaN(parseFloat(montoPago)) || parseFloat(montoPago) <= 0 || !fechaPago || !carteraPagoIdModal) { setPagoError("Completa campos requeridos."); return; }
+        if (!session?.user?.id) { setPagoError("Error sesión."); return; }
 
         setIsPaying(true); setPagoError('');
         const userId = session.user.id;
@@ -71,14 +99,16 @@ function Debts({ session }) {
 
         try {
             const categoriaPago = await obtenerOCrearCategoriaAjuste('Egreso', userId);
-            if (!categoriaPago || !categoriaPago.id) throw new Error("No se pudo obtener/crear categoría para pagos.");
+            if (!categoriaPago || !categoriaPago.id) throw new Error("No se pudo obtener/crear categoría pago.");
             const pagoData = { debtId: deudaParaPago.id, monto: montoNum, fecha: fechaPago, carteraId: parseInt(carteraPagoIdModal, 10), categoriaId: categoriaPago.id, descripcion: descripcionPago.trim() || `Pago ${deudaParaPago.nombre}` };
             const { data: resultadoRpc, error: rpcError } = await registrarPagoDeuda(pagoData);
             if (rpcError) throw rpcError;
+
             console.log("Pago registrado:", resultadoRpc);
             closeModalPago();
-            cargarDatos(); // Recargar lista de deudas
-            alert("¡Pago registrado con éxito!");
+            cargarDatos(); // Recargar lista de deudas para ver saldo actualizado
+            alert("¡Pago registrado!");
+
         } catch (err) { console.error("Error registrando pago:", err); setPagoError(`Error: ${err.message || 'Desconocido'}`); }
         finally { setIsPaying(false); }
     };
@@ -110,11 +140,51 @@ function Debts({ session }) {
                 {!cargando && debts.length > 0 && (
                     <div className="overflow-x-auto relative shadow-md rounded-lg border border-gray-700">
                         <table className="w-full text-sm text-left text-gray-400">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-700"> <tr> <th scope="col" className="px-4 py-3">Nombre</th> <th scope="col" className="px-4 py-3 text-right">Monto Inicial</th> <th scope="col" className="px-4 py-3 text-right font-semibold">Saldo Actual</th> <th scope="col" className="px-4 py-3 text-right hidden sm:table-cell">Interés</th> <th scope="col" className="px-4 py-3 text-right hidden md:table-cell">Pago Mín.</th> <th scope="col" className="px-4 py-3 hidden lg:table-cell">Cartera Pago</th> <th scope="col" className="px-4 py-3">Progreso</th> <th scope="col" className="px-4 py-3 text-center">Acciones</th> </tr> </thead>
+                            <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                                <tr>
+                                    <th scope="col" className="px-4 py-3">Nombre</th>
+                                    <th scope="col" className="px-4 py-3 text-right">Monto Inicial</th>
+                                    <th scope="col" className="px-4 py-3 text-right font-semibold">Saldo Actual</th>
+                                    <th scope="col" className="px-4 py-3 text-right hidden sm:table-cell">Interés</th>
+                                    <th scope="col" className="px-4 py-3 text-right hidden md:table-cell">Pago Mín.</th>
+                                    <th scope="col" className="px-4 py-3 hidden lg:table-cell">Cartera Pago</th>
+                                    <th scope="col" className="px-4 py-3">Progreso</th>
+                                    <th scope="col" className="px-4 py-3 text-center">Acciones</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {debts.map((debt) => {
-                                    const saldoActual = debt.saldo_actual ?? debt.monto_inicial; const progreso = debt.monto_inicial > 0 ? Math.max(0, Math.min(100, ((debt.monto_inicial - saldoActual) / debt.monto_inicial) * 100)) : (saldoActual <= 0 ? 100 : 0); const progresoColor = progreso < 25 ? 'bg-red-500' : progreso < 75 ? 'bg-yellow-500' : 'bg-green-500';
-                                    return ( <tr key={debt.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600"> <td className="px-4 py-3 font-medium text-gray-300 whitespace-nowrap">{debt.nombre}</td> <td className="px-4 py-3 text-right whitespace-nowrap">{formatearMonedaLocal(debt.monto_inicial)}</td> <td className="px-4 py-3 text-right whitespace-nowrap font-semibold text-orange-400">{formatearMonedaLocal(saldoActual)}</td> <td className="px-4 py-3 text-right hidden sm:table-cell">{formatearPorcentaje(debt.tasa_interes_anual)}</td> <td className="px-4 py-3 text-right hidden md:table-cell">{formatearMonedaLocal(debt.pago_minimo_mensual)}</td> <td className="px-4 py-3 hidden lg:table-cell">{debt.cartera?.nombre || '-'}</td> <td className="px-4 py-3"> <div className="w-full bg-gray-600 rounded-full h-2.5" title={`${progreso.toFixed(0)}% pagado`}> <div className={`h-2.5 rounded-full ${progresoColor}`} style={{ width: `${progreso}%` }}></div> </div> </td> <td className="px-4 py-3 text-center"> <div className="flex flex-col space-y-1 sm:space-y-0 sm:flex-row justify-center items-center sm:space-x-2"> <button onClick={() => openModalPago(debt)} className={`${actionButtonClasses} text-cyan-400 w-full sm:w-auto`} aria-label={`Pagar ${debt.nombre}`}>💸 Pagar</button> <button onClick={() => handleEditarClick(debt)} className={`${actionButtonClasses} text-yellow-400 w-full sm:w-auto`} aria-label={`Editar ${debt.nombre}`}>✏️ Editar</button> <button onClick={() => handleEliminarClick(debt.id)} className={`${actionButtonClasses} text-red-500 w-full sm:w-auto`} aria-label={`Eliminar ${debt.nombre}`}>🗑️ Eliminar</button> </div> </td> </tr> );
+                                    // Usa saldo_actual si existe, si no, monto_inicial
+                                    const saldoActual = debt.saldo_actual ?? debt.monto_inicial;
+                                    // Calcula progreso basado en cuánto se ha pagado
+                                    const pagado = debt.monto_inicial - saldoActual;
+                                    const progreso = debt.monto_inicial > 0 ? Math.max(0, Math.min(100, (pagado / debt.monto_inicial) * 100)) : (saldoActual <= 0 ? 100 : 0);
+                                    const progresoColor = progreso < 25 ? 'bg-red-500' : progreso < 75 ? 'bg-yellow-500' : 'bg-green-500'; // Verde al final
+
+                                    return (
+                                        <tr key={debt.id} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600">
+                                            <td className="px-4 py-3 font-medium text-gray-300 whitespace-nowrap">{debt.nombre}</td>
+                                            <td className="px-4 py-3 text-right whitespace-nowrap">{formatearMonedaLocal(debt.monto_inicial)}</td>
+                                            {/* Mostrar Saldo Actual REAL */}
+                                            <td className="px-4 py-3 text-right whitespace-nowrap font-semibold text-orange-400">{formatearMonedaLocal(saldoActual)}</td>
+                                            <td className="px-4 py-3 text-right hidden sm:table-cell">{formatearPorcentaje(debt.tasa_interes_anual)}</td>
+                                            <td className="px-4 py-3 text-right hidden md:table-cell">{formatearMonedaLocal(debt.pago_minimo_mensual)}</td>
+                                            <td className="px-4 py-3 hidden lg:table-cell">{debt.cartera?.nombre || '-'}</td>
+                                            {/* Barra de Progreso REAL */}
+                                            <td className="px-4 py-3">
+                                                <div className="w-full bg-gray-600 rounded-full h-2.5" title={`${progreso.toFixed(0)}% pagado`}>
+                                                    <div className={`h-2.5 rounded-full ${progresoColor}`} style={{ width: `${progreso}%` }}></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex flex-col space-y-1 sm:space-y-0 sm:flex-row justify-center items-center sm:space-x-2">
+                                                    <button onClick={() => openModalPago(debt)} className={`${actionButtonClasses} text-cyan-400 w-full sm:w-auto`} aria-label={`Pagar ${debt.nombre}`}>💸 Pagar</button>
+                                                    <button onClick={() => handleEditarClick(debt)} className={`${actionButtonClasses} text-yellow-400 w-full sm:w-auto`} aria-label={`Editar ${debt.nombre}`}>✏️ Editar</button>
+                                                    <button onClick={() => handleEliminarClick(debt.id)} className={`${actionButtonClasses} text-red-500 w-full sm:w-auto`} aria-label={`Eliminar ${debt.nombre}`}>🗑️ Eliminar</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
                                 })}
                             </tbody>
                         </table>
@@ -123,13 +193,12 @@ function Debts({ session }) {
             </section>
 
             {/* Modal para Registrar Pago */}
-            {/* CORRECCIÓN: Usar deudaParaPago en lugar de carteraParaPago */}
             {showModalPago && deudaParaPago && (
                 <div className="fixed inset-0 z-40 bg-black bg-opacity-75 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out">
                   <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-gray-700 transform transition-all duration-300 ease-in-out scale-100">
-                    <h3 className="text-lg font-semibold text-white mb-4">Registrar Pago para: <span className="text-cyan-400">{deudaParaPago.nombre}</span></h3> {/* Corregido */}
+                    <h3 className="text-lg font-semibold text-white mb-4">Registrar Pago para: <span className="text-cyan-400">{deudaParaPago.nombre}</span></h3>
                     <form onSubmit={handlePagoSubmit} className="space-y-4">
-                       <div><label className={labelClasses}>Saldo Actual:</label><p className="text-orange-400 font-medium">{formatearMonedaLocal(deudaParaPago.saldo_actual ?? deudaParaPago.monto_inicial)}</p></div> {/* Corregido */}
+                       <div><label className={labelClasses}>Saldo Actual:</label><p className="text-orange-400 font-medium">{formatearMonedaLocal(deudaParaPago.saldo_actual ?? deudaParaPago.monto_inicial)}</p></div>
                        <div><label htmlFor="montoPago" className={labelClasses}>Monto Pagado <span className="text-red-500">*</span></label><input type="number" id="montoPago" value={montoPago} onChange={(e) => setMontoPago(e.target.value)} required min="0.01" step="0.01" className={inputClasses} disabled={loadingSettings || isPaying}/></div>
                        <div><label htmlFor="fechaPago" className={labelClasses}>Fecha Pago <span className="text-red-500">*</span></label><input type="date" id="fechaPago" value={fechaPago} onChange={(e) => setFechaPago(e.target.value)} required className={inputClasses} disabled={isPaying}/></div>
                        <div><label htmlFor="carteraPagoModal" className={labelClasses}>Pagar Desde Cartera <span className="text-red-500">*</span></label><select id="carteraPagoModal" value={carteraPagoIdModal} onChange={(e) => setCarteraPagoIdModal(e.target.value)} required className={selectClasses} disabled={carteras.length === 0 || cargando || isPaying}><option value="" disabled>-- Selecciona --</option>{cargando ? <option>...</option> : carteras.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
