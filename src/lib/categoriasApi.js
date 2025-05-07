@@ -1,18 +1,18 @@
 import { supabase } from './supabaseClient';
 
-// Función auxiliar para obtener el ID del usuario actual
+// Helper para obtener ID de usuario (opcional aquí, pero útil)
 const getCurrentUserId = async () => {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) {
-    console.error("Error obteniendo sesión:", sessionError);
-    return null;
-  }
+  const { data: { session } } = await supabase.auth.getSession();
   return session?.user?.id ?? null;
 };
 
-// Obtener categorías, opcionalmente filtradas por tipo (Ingreso/Egreso)
+/**
+ * Obtiene categorías, opcionalmente filtradas por tipo.
+ * @param {'Ingreso' | 'Egreso' | null} [tipo=null] - Filtrar por tipo o null para todas.
+ * @returns {Promise<{data: Array|null, error: Object|null}>}
+ */
 export const obtenerCategorias = async (tipo = null) => {
-  // RLS se encargará de filtrar por usuario
+  // RLS filtra por usuario implícitamente
   let query = supabase
     .from('categorias')
     .select('*');
@@ -26,54 +26,65 @@ export const obtenerCategorias = async (tipo = null) => {
   const { data, error } = await query;
 
   if (error) {
-    console.error("API Error (Categorías): No se pudieron obtener:", error.message);
+    console.error("API Error (Categorías Get):", error.message);
   }
   return { data, error };
 };
 
-export const agregarCategoria = async (nuevaCategoria) => {
+/**
+ * Agrega una nueva categoría.
+ * @param {object} nuevaCategoria - Objeto con { nombre, tipo }.
+ * @param {string} userId - ID del usuario.
+ * @returns {Promise<{data: object|null, error: Object|null}>}
+ */
+export const agregarCategoria = async (nuevaCategoria, userId) => {
    if (!['Ingreso', 'Egreso'].includes(nuevaCategoria.tipo)) {
-       const error = { message: "El tipo de categoría debe ser 'Ingreso' o 'Egreso'." };
-       console.error("API Error (Categorías):", error.message);
-       return { data: null, error };
+       return { data: null, error: { message: "Tipo de categoría inválido." } };
    }
-
-   // Obtenemos el ID del usuario logueado
-   const userId = await getCurrentUserId();
    if (!userId) {
-       const error = { message: 'Usuario no autenticado. No se puede agregar categoría.' };
-       console.error(error.message);
-       return { data: null, error };
+       return { data: null, error: { message: 'ID de usuario no proporcionado.' } };
+   }
+   if (!nuevaCategoria.nombre || typeof nuevaCategoria.nombre !== 'string' || nuevaCategoria.nombre.trim() === '') {
+        return { data: null, error: { message: 'Nombre de categoría inválido.' } };
    }
 
-   // Añadimos el user_id al objeto que se va a insertar
-   const categoriaConUserId = {
-       ...nuevaCategoria,
-       user_id: userId
-   };
+  const categoriaConUserId = {
+      ...nuevaCategoria,
+      nombre: nuevaCategoria.nombre.trim(), // Limpiar nombre
+      user_id: userId
+  };
 
   const { data, error } = await supabase
     .from('categorias')
-    .insert([categoriaConUserId]) // Insertamos el objeto completo
+    .insert([categoriaConUserId])
     .select()
     .single();
 
   if (error) {
-    console.error("API Error (Categorías): No se pudo agregar:", error.message);
-  } else {
-     console.log("API Éxito (Categorías): Agregada con user_id:", userId);
+    console.error("API Error (Categorías Add):", error.message);
   }
   return { data, error };
 };
 
+/**
+ * Edita una categoría existente.
+ * @param {bigint} id - ID de la categoría a editar.
+ * @param {object} datosActualizados - Objeto con { nombre?, tipo? }.
+ * @returns {Promise<{data: object|null, error: Object|null}>}
+ */
 export const editarCategoria = async (id, datosActualizados) => {
    if (datosActualizados.tipo && !['Ingreso', 'Egreso'].includes(datosActualizados.tipo)) {
-       const error = { message: "El tipo de categoría debe ser 'Ingreso' o 'Egreso'." };
-       console.error("API Error (Categorías):", error.message);
-       return { data: null, error };
+       return { data: null, error: { message: "Tipo de categoría inválido." } };
    }
-   // RLS protegerá la edición no autorizada
+   if (datosActualizados.nombre !== undefined && (typeof datosActualizados.nombre !== 'string' || datosActualizados.nombre.trim() === '')) {
+       return { data: null, error: { message: "Nombre de categoría inválido." } };
+   }
+   // Limpiar nombre si se actualiza
+   if (datosActualizados.nombre) {
+       datosActualizados.nombre = datosActualizados.nombre.trim();
+   }
 
+  // RLS protege la edición
   const { data, error } = await supabase
     .from('categorias')
     .update(datosActualizados)
@@ -82,20 +93,77 @@ export const editarCategoria = async (id, datosActualizados) => {
     .single();
 
   if (error) {
-    console.error("API Error (Categorías): No se pudo editar:", error.message);
+    console.error("API Error (Categorías Edit):", error.message);
   }
   return { data, error };
 };
 
+/**
+ * Elimina una categoría.
+ * @param {bigint} id - ID de la categoría a eliminar.
+ * @returns {Promise<{data: null, error: Object|null}>}
+ */
 export const eliminarCategoria = async (id) => {
-  // RLS protegerá el borrado no autorizado
+  // RLS protege el borrado
   const { error } = await supabase
     .from('categorias')
     .delete()
     .eq('id', id);
 
   if (error) {
-    console.error("API Error (Categorías): No se pudo eliminar:", error.message);
+    console.error("API Error (Categorías Delete):", error.message);
   }
   return { data: null, error };
+};
+
+/**
+ * Obtiene o crea una categoría específica para ajustes de saldo o pagos de deuda.
+ * @param {'Ingreso' | 'Egreso'} tipoAjuste - El tipo de ajuste/pago.
+ * @param {string} userId - El ID del usuario.
+ * @returns {Promise<{id: bigint, nombre: string, tipo: string}|null>} El objeto de la categoría o null si hay error.
+ */
+export const obtenerOCrearCategoriaAjuste = async (tipoAjuste, userId) => {
+    if (!userId) { console.error("Se requiere userId."); return null; }
+    if (tipoAjuste !== 'Ingreso' && tipoAjuste !== 'Egreso') { console.error("Tipo inválido."); return null; }
+
+    // Definir nombres estándar para estas categorías especiales
+    const nombreCategoriaAjuste = tipoAjuste === 'Ingreso'
+        ? 'Ajuste de Saldo (Ingreso)'
+        : 'Ajuste/Pago Deuda (Egreso)'; // Un nombre más genérico para egresos
+
+    console.log(`Buscando/Creando categoría: ${nombreCategoriaAjuste}`);
+
+    // 1. Buscar si ya existe
+    let { data: existente, error: findError } = await supabase
+        .from('categorias')
+        .select('id, nombre, tipo')
+        .eq('user_id', userId)
+        .eq('nombre', nombreCategoriaAjuste)
+        .eq('tipo', tipoAjuste) // Asegurar que el tipo coincida
+        .maybeSingle(); // Usa maybeSingle para no fallar si no existe
+
+    if (findError) {
+        console.error("Error buscando categoría ajuste:", findError);
+        return null;
+    }
+
+    if (existente) {
+        console.log("Categoría ajuste encontrada:", existente);
+        return existente;
+    }
+
+    // 2. Si no existe, crearla
+    console.log("Categoría ajuste no encontrada, creando...");
+    const { data: nueva, error: createError } = await agregarCategoria({
+        nombre: nombreCategoriaAjuste,
+        tipo: tipoAjuste
+    }, userId);
+
+    if (createError) {
+        console.error("Error creando categoría ajuste:", createError);
+        return null;
+    }
+
+    console.log("Categoría ajuste creada:", nueva);
+    return nueva;
 };
