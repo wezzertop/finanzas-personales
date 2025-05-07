@@ -1,5 +1,5 @@
 import React from 'react';
-import AdPlaceholder from './AdPlaceholder'; // Importar Placeholder para anuncio
+// Ya no importamos AdPlaceholder
 
 function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session }) {
 
@@ -15,11 +15,10 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session 
   const handleLinkClick = (pageName) => { navigateTo(pageName); };
 
   return (
-    // Contenedor principal: flex-col y h-full ASEGURAN que ocupe toda la altura
-    // overflow-hidden para evitar barras de scroll accidentales en el aside mismo
+    // Contenedor principal
     <aside className="w-full h-full bg-gray-900 text-gray-300 flex flex-col shadow-lg overflow-hidden">
 
-      {/* Header: Fijo arriba, no se encoge */}
+      {/* Header */}
       <div className="flex justify-between items-center p-4 flex-shrink-0 border-b border-gray-700/50">
         <h1 className="text-2xl font-bold text-white">Finanzas</h1>
         {closeMobileMenu && (
@@ -29,13 +28,9 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session 
         )}
       </div>
 
-      {/* Contenedor del contenido scrollable */}
-      {/* flex-1 permite que este div ocupe el espacio restante */}
-      {/* overflow-y-auto aplica el scroll vertical SOLO a este div */}
-      <div className="flex-1 overflow-y-auto p-2"> {/* Padding aplicado aquí */}
-
-          {/* Navegación Principal */}
-          <nav className="mb-4"> {/* Margen inferior para separar del footer visualmente */}
+      {/* Contenido scrollable (Menú) */}
+      <div className="flex-1 overflow-y-auto p-2">
+          <nav className="mb-4">
             {menuGroups.map((group, groupIndex) => (
               <div key={group.title} className={groupIndex > 0 ? 'mt-4 pt-4 border-t border-gray-700' : 'pt-2'}>
                 {group.title && ( <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider"> {group.title} </h3> )}
@@ -57,21 +52,10 @@ function Sidebar({ currentPage, navigateTo, closeMobileMenu, userEmail, session 
             ))}
           </nav>
 
-          {/* Footer: Ahora DENTRO del div scrollable */}
-          {/* Se añade pb-4 aquí para asegurar espacio al final del scroll */}
+          {/* Footer: Email y Botones de Cuenta (SIN ANUNCIO) */}
           <div className="pt-4 border-t border-gray-700 pb-4">
-            {/* Placeholder de Anuncio */}
-            <div className="px-2 mb-4">
-                 <AdPlaceholder
-                     slot="1763243425" // Reemplaza con tu ID de slot real
-                     format="auto"
-                     responsive="true"
-                     className="min-h-[100px]"
-                 />
-            </div>
-            {/* Información del Usuario */}
-             {userEmail && ( <div className="px-3 py-2 mb-2 text-xs text-gray-400 truncate" title={userEmail}> Conectado como: <br/> <span className="font-medium text-gray-300">{userEmail}</span> </div> )}
-             {/* Botones de Cuenta */}
+            {/* SE ELIMINÓ EL DIV QUE CONTENÍA AdPlaceholder */}
+            {userEmail && ( <div className="px-3 py-2 mb-2 text-xs text-gray-400 truncate" title={userEmail}> Conectado como: <br/> <span className="font-medium text-gray-300">{userEmail}</span> </div> )}
              <ul>
                  {accountItems.map((item) => {
                      const isActive = currentPage === item.name;
