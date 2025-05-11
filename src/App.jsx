@@ -1,7 +1,8 @@
+// Archivo: src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabaseClient'; // Cliente Supabase
-import Sidebar from './components/Sidebar'; // Barra lateral
-import AuthPage from './pages/AuthPage'; // Página de autenticación
+import { supabase } from './lib/supabaseClient';
+import Sidebar from './components/Sidebar';
+import AuthPage from './pages/AuthPage';
 
 // Importación de todas las páginas principales de la aplicación
 import Dashboard from './pages/Dashboard';
@@ -12,12 +13,13 @@ import Calendario from './pages/Calendario';
 import Graficos from './pages/Graficos';
 import Configuracion from './pages/Configuracion';
 import Presupuestos from './pages/Presupuestos';
-import Recurring from './pages/Recurring'; // Transacciones Recurrentes
-import Objetivos from './pages/Objetivos'; // Objetivos de Ahorro
-import Importar from './pages/Importar';   // Importar CSV
-import Informes from './pages/Informes';   // Informes
-import Perfil from './pages/Perfil';     // Perfil de Usuario
-import Debts from './pages/Debts';       // Deudas
+import Recurring from './pages/Recurring';
+import Objetivos from './pages/Objetivos';
+import Importar from './pages/Importar';
+import Informes from './pages/Informes';
+import Perfil from './pages/Perfil';
+import Debts from './pages/Debts';
+import Inversiones from './pages/Inversiones'; // <--- MÓDULO DE INVERSIONES IMPORTADO
 
 function App() {
   // Estado para controlar la visibilidad del menú lateral en móviles
@@ -38,8 +40,9 @@ function App() {
       if (initialSession) {
           setCurrentPage('Dashboard'); // Si hay sesión, empieza en Dashboard
       } else {
-          // Si no hay sesión, no importa la página, mostrará AuthPage
-          setCurrentPage('Transacciones'); // O cualquier default
+          // Si no hay sesión, AuthPage se mostrará independientemente de currentPage.
+          // Establecer un default aquí es más por consistencia interna.
+          setCurrentPage('Dashboard'); // O cualquier otra página por defecto
       }
       setLoadingSession(false); // Marca que la carga inicial terminó
     });
@@ -96,6 +99,8 @@ function App() {
           const { error } = await supabase.auth.signOut();
           if (error) { throw error; } // Lanza error si falla
           console.log("[handleLogout] Comando signOut llamado exitosamente.");
+          // No es necesario setCurrentPage aquí, el listener de onAuthStateChange
+          // y el renderizado condicional se encargarán de mostrar AuthPage.
       } catch (error) {
           console.error('[handleLogout] Error durante el proceso de logout:', error);
           alert(`Error al cerrar sesión: ${error.message}`); // Muestra error al usuario
@@ -105,10 +110,10 @@ function App() {
 
   // Función que decide qué componente de página renderizar
   const renderCurrentPage = () => {
-    // Si no hay sesión (incluso después de cargar), devuelve null aquí
+    // Si no hay sesión (incluso después de cargar), devuelve null aquí.
     // El renderizado principal se encargará de mostrar AuthPage.
     if (!session) {
-         console.warn("[renderCurrentPage] No hay sesión, devolviendo null.");
+        // console.warn("[renderCurrentPage] No hay sesión, devolviendo null. AuthPage se encargará.");
         return null;
     }
     // Pasamos la 'session' como prop a cada página
@@ -126,7 +131,8 @@ function App() {
       case 'Importar': return <Importar session={session} />;
       case 'Informes': return <Informes session={session} />;
       case 'Perfil': return <Perfil session={session} />;
-      case 'Deudas': return <Debts session={session} />; // Incluye Deudas
+      case 'Debts': return <Debts session={session} />;
+      case 'Inversiones': return <Inversiones session={session} />; // <--- CASE PARA INVERSIONES
       default: return <Dashboard session={session} />; // Dashboard como página por defecto si está logueado
     }
   };
@@ -185,7 +191,7 @@ function App() {
                   <h1 className="ml-4 text-lg font-semibold text-white">{currentPage}</h1>
                </div>
              )}
-            {/* Renderiza la página actual (o AuthPage si no hay sesión) */}
+            {/* Renderiza la página actual */}
             <main className="p-4 md:p-6">
               {renderCurrentPage()}
             </main>
