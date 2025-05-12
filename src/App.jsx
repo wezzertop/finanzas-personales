@@ -1,8 +1,8 @@
 // Archivo: src/App.jsx
-import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabaseClient';
-import Sidebar from './components/Sidebar';
-import AuthPage from './pages/AuthPage';
+import React, { useState, useEffect, useCallback } from 'react'; // <--- useCallback AÑADIDO AQUÍ
+import { supabase } from './lib/supabaseClient'; // Cliente Supabase
+import Sidebar from './components/Sidebar'; // Componente de la barra lateral
+import AuthPage from './pages/AuthPage'; // Página de autenticación
 
 // Importación de todas las páginas principales de la aplicación
 import Dashboard from './pages/Dashboard';
@@ -19,179 +19,178 @@ import Importar from './pages/Importar';
 import Informes from './pages/Informes';
 import Perfil from './pages/Perfil';
 import Debts from './pages/Debts';
-import Inversiones from './pages/Inversiones'; // <--- MÓDULO DE INVERSIONES IMPORTADO
+import Inversiones from './pages/Inversiones';
+import ProgresoLogrosPage from './pages/ProgresoLogrosPage'; // Página de Gamificación
 
 function App() {
   // Estado para controlar la visibilidad del menú lateral en móviles
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   // Estado para saber qué página mostrar, inicia en Dashboard si está logueado
   const [currentPage, setCurrentPage] = useState('Dashboard');
-  // Estado para almacenar la información de la sesión del usuario (null si no está logueado)
+  // Estado para almacenar la información de la sesión del usuario
   const [session, setSession] = useState(null);
   // Estado para indicar si se está cargando la información inicial de la sesión
   const [loadingSession, setLoadingSession] = useState(true);
+  // Estado para pasar parámetros entre navegaciones (ej. ID de transacción a editar)
+  const [navigationState, setNavigationState] = useState(null);
 
-  // Efecto para manejar el estado de autenticación al cargar y al cambiar
+  // Efecto para manejar el estado de autenticación al cargar la app y cuando cambia
   useEffect(() => {
     // Obtiene la sesión actual al iniciar la aplicación
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession); // Guarda la sesión obtenida (puede ser null)
-      // Define la página inicial basada en si hay sesión o no
+      setSession(initialSession); // Guarda la sesión (puede ser null)
       if (initialSession) {
-          setCurrentPage('Dashboard'); // Si hay sesión, empieza en Dashboard
+        setCurrentPage('Dashboard'); // Si hay sesión, empieza en Dashboard
       } else {
-          // Si no hay sesión, AuthPage se mostrará independientemente de currentPage.
-          // Establecer un default aquí es más por consistencia interna.
-          setCurrentPage('Dashboard'); // O cualquier otra página por defecto
+        // Si no hay sesión, AuthPage se mostrará por el renderizado condicional.
+        setCurrentPage('Dashboard'); 
       }
-      setLoadingSession(false); // Marca que la carga inicial terminó
+      setLoadingSession(false); // Marca que la carga inicial de sesión terminó
     });
 
-    // Escucha los eventos de autenticación (inicio de sesión, cierre de sesión)
+    // Escucha los eventos de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        console.log("Auth event:", _event, newSession); // Log para depuración
-        setSession(newSession); // Actualiza el estado de la sesión
-         // Redirige automáticamente al iniciar sesión
-         if (_event === 'SIGNED_IN') {
+        console.log("Auth event:", _event, newSession); 
+        setSession(newSession); 
+
+        if (_event === 'SIGNED_IN') {
+          if (currentPage === 'AuthPage' || !currentPage) { 
              setCurrentPage('Dashboard');
-         }
-         // Al cerrar sesión (SIGNED_OUT), session se vuelve null,
-         // y el renderizado condicional mostrará AuthPage automáticamente.
-         if (_event === 'SIGNED_OUT') {
-             console.log("Sesión cerrada detectada por listener.");
-         }
+          }
+          setNavigationState(null); 
+        }
+        
+        if (_event === 'SIGNED_OUT') {
+          setCurrentPage('Dashboard'); 
+          setNavigationState(null); 
+        }
       }
     );
 
-    // Función de limpieza: se ejecuta cuando el componente se desmonta
-    // para dejar de escuchar los eventos de autenticación
     return () => {
       subscription?.unsubscribe();
     };
-  }, []); // El array vacío asegura que este efecto se ejecute solo una vez
+  }, []); // currentPage fue removido de las dependencias para evitar re-ejecuciones no deseadas por cambio de página
 
   // Función para abrir/cerrar el menú lateral en móviles
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
   };
 
-  // Función para navegar entre páginas
-  const navigateTo = (page) => {
-     // Manejo especial para la opción 'Salir'
-     if (page === 'Salir') {
-         handleLogout(); // Llama a la función para cerrar sesión
-         return; // No actualiza currentPage directamente
-     }
-    setCurrentPage(page); // Actualiza la página actual
-    setIsMobileSidebarOpen(false); // Cierra el menú móvil si estaba abierto
+  // Función para navegar entre páginas, ahora acepta un estado opcional
+  const navigateTo = (page, state = null) => {
+    if (page === 'Salir') {
+      handleLogout();
+      return;
+    }
+    console.log(`[App.jsx] Navegando a ${page} con estado:`, state);
+    setNavigationState(state); 
+    setCurrentPage(page);     
+    setIsMobileSidebarOpen(false); 
   };
 
   // Función para cerrar la sesión del usuario
   const handleLogout = async () => {
-      setIsMobileSidebarOpen(false); // Cierra el menú móvil
-      console.log("[handleLogout] Intentando cerrar sesión...");
-      try {
-          // Intenta refrescar la sesión antes por si acaso (puede ayudar con errores)
-          await supabase.auth.refreshSession();
-          console.log("[handleLogout] Refresh intentado.");
-          // Llama a la función de Supabase para cerrar sesión
-          const { error } = await supabase.auth.signOut();
-          if (error) { throw error; } // Lanza error si falla
-          console.log("[handleLogout] Comando signOut llamado exitosamente.");
-          // No es necesario setCurrentPage aquí, el listener de onAuthStateChange
-          // y el renderizado condicional se encargarán de mostrar AuthPage.
-      } catch (error) {
-          console.error('[handleLogout] Error durante el proceso de logout:', error);
-          alert(`Error al cerrar sesión: ${error.message}`); // Muestra error al usuario
-      }
+    setIsMobileSidebarOpen(false); 
+    console.log("[App.jsx] Intentando cerrar sesión...");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) { throw error; }
+      console.log("[App.jsx] Comando signOut llamado exitosamente.");
+    } catch (error) {
+      console.error('[App.jsx] Error durante el proceso de logout:', error);
+      alert(`Error al cerrar sesión: ${error.message}`);
+    }
   };
 
+  // Función para limpiar el estado de navegación después de que la página destino lo haya consumido
+  const clearNavigationState = useCallback(() => { // <--- USO DE useCallback
+    console.log("[App.jsx] Limpiando navigationState.");
+    setNavigationState(null);
+  }, []); // No tiene dependencias, se crea una vez
 
   // Función que decide qué componente de página renderizar
   const renderCurrentPage = () => {
-    // Si no hay sesión (incluso después de cargar), devuelve null aquí.
-    // El renderizado principal se encargará de mostrar AuthPage.
     if (!session) {
-        // console.warn("[renderCurrentPage] No hay sesión, devolviendo null. AuthPage se encargará.");
-        return null;
+      return null; 
     }
-    // Pasamos la 'session' como prop a cada página
+
+    const pageProps = { session, navigateTo };
+
     switch (currentPage) {
-      case 'Transacciones': return <Transacciones session={session} />;
-      case 'Carteras': return <Carteras session={session} />;
-      case 'Categorías': return <Categorias session={session} />;
-      case 'Calendario': return <Calendario session={session} />;
-      case 'Dashboard': return <Dashboard session={session} />;
-      case 'Graficos': return <Graficos session={session} />;
-      case 'Configuracion': return <Configuracion session={session} />;
-      case 'Presupuestos': return <Presupuestos session={session} />;
-      case 'Recurring': return <Recurring session={session} />;
-      case 'Objetivos': return <Objetivos session={session} />;
-      case 'Importar': return <Importar session={session} />;
-      case 'Informes': return <Informes session={session} />;
-      case 'Perfil': return <Perfil session={session} />;
-      case 'Debts': return <Debts session={session} />;
-      case 'Inversiones': return <Inversiones session={session} />; // <--- CASE PARA INVERSIONES
-      default: return <Dashboard session={session} />; // Dashboard como página por defecto si está logueado
+      case 'Transacciones':
+        return <Transacciones 
+                  {...pageProps} 
+                  initialNavigationState={navigationState} 
+                  clearNavigationState={clearNavigationState} 
+                />;
+      case 'Carteras': return <Carteras {...pageProps} />;
+      case 'Categorías': return <Categorias {...pageProps} />;
+      case 'Calendario': return <Calendario {...pageProps} />;
+      case 'Dashboard': return <Dashboard {...pageProps} />;
+      case 'Graficos': return <Graficos {...pageProps} />;
+      case 'Configuracion': return <Configuracion {...pageProps} />;
+      case 'Presupuestos': return <Presupuestos {...pageProps} />;
+      case 'Recurring': return <Recurring {...pageProps} />;
+      case 'Objetivos': return <Objetivos {...pageProps} />;
+      case 'Importar': return <Importar {...pageProps} />;
+      case 'Informes': return <Informes {...pageProps} />;
+      case 'Perfil': return <Perfil {...pageProps} />;
+      case 'Debts': return <Debts {...pageProps} />;
+      case 'Inversiones': return <Inversiones {...pageProps} />;
+      case 'ProgresoLogros': return <ProgresoLogrosPage {...pageProps} />;
+      default:
+        console.warn(`[App.jsx] Página desconocida: ${currentPage}. Redirigiendo a Dashboard.`);
+        return <Dashboard {...pageProps} />;
     }
   };
 
-  // Muestra un indicador mientras se carga la sesión inicial
   if (loadingSession) {
-      return <div className="min-h-screen bg-gray-800 flex items-center justify-center text-white">Cargando sesión...</div>;
+    return (
+      <div className="min-h-screen bg-gray-800 flex items-center justify-center text-white text-lg">
+        <span role="img" aria-label="Cargando" className="animate-spin text-2xl mr-3">⏳</span>
+        Cargando sesión...
+      </div>
+    );
   }
 
-  // Renderizado principal: Muestra AuthPage o el layout de la app
   return (
     <>
       {!session ? (
-        // Si no hay sesión, muestra solo la página de autenticación
         <AuthPage />
       ) : (
-        // Si hay sesión, muestra el layout completo de la aplicación
         <div className="flex min-h-screen bg-gray-800 relative overflow-x-hidden">
-          {/* Renderiza Sidebars y Overlay solo si hay sesión */}
-          {session && (
-            <>
-              {/* Sidebar Escritorio (oculto en móvil) */}
-              <div className="hidden md:flex md:w-64 md:flex-shrink-0">
-                <Sidebar
-                  currentPage={currentPage}
-                  navigateTo={navigateTo}
-                  userEmail={session?.user?.email}
-                  session={session} // Pasar sesión por si Sidebar la necesita
-                />
-              </div>
-              {/* Sidebar Móvil (controlado por estado) */}
-              <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                 <Sidebar
-                   currentPage={currentPage}
-                   navigateTo={navigateTo}
-                   closeMobileMenu={toggleMobileSidebar} // Función para cerrar desde dentro
-                   userEmail={session?.user?.email}
-                   session={session}
-                 />
-              </div>
-              {/* Overlay para cerrar menú móvil */}
-              {isMobileSidebarOpen && ( <div className="fixed inset-0 bg-black opacity-50 z-20 md:hidden" onClick={toggleMobileSidebar} aria-hidden="true"></div> )}
-            </>
-          )}
-
-          {/* Contenido Principal */}
-          <div className="flex-grow overflow-auto w-full">
-             {/* Header Móvil (Solo si hay sesión) */}
-             {session && (
-               <div className="sticky top-0 z-10 bg-gray-900 md:hidden px-4 py-3 flex items-center">
-                  {/* Botón Hamburguesa */}
-                  <button onClick={toggleMobileSidebar} className="text-gray-300 hover:text-white focus:outline-none" aria-label="Abrir menú">
-                      <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                  </button>
-                  {/* Título de la página actual */}
-                  <h1 className="ml-4 text-lg font-semibold text-white">{currentPage}</h1>
-               </div>
-             )}
-            {/* Renderiza la página actual */}
+          <>
+            <div className="hidden md:flex md:w-64 md:flex-shrink-0">
+              <Sidebar
+                currentPage={currentPage}
+                navigateTo={navigateTo}
+                userEmail={session?.user?.email}
+                session={session} 
+              />
+            </div>
+            <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+               <Sidebar
+                 currentPage={currentPage}
+                 navigateTo={navigateTo}
+                 closeMobileMenu={toggleMobileSidebar} 
+                 userEmail={session?.user?.email}
+                 session={session}
+               />
+            </div>
+            {isMobileSidebarOpen && ( <div className="fixed inset-0 bg-black opacity-50 z-20 md:hidden" onClick={toggleMobileSidebar} aria-hidden="true"></div> )}
+          </>
+          
+          <div className="flex-grow overflow-y-auto w-full">
+             <div className="sticky top-0 z-10 bg-gray-900 md:hidden px-4 py-3 flex items-center shadow">
+                <button onClick={toggleMobileSidebar} className="text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" aria-label="Abrir menú">
+                    <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+                <h1 className="ml-4 text-lg font-semibold text-white">
+                  {currentPage === 'ProgresoLogros' ? 'Progreso y Logros' : currentPage}
+                </h1>
+             </div>
             <main className="p-4 md:p-6">
               {renderCurrentPage()}
             </main>
