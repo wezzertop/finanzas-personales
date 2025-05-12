@@ -1,114 +1,163 @@
-    /* Archivo: src/pages/CalendarioStyles.css */
-    /* Estilos para adaptar react-calendar al tema oscuro */
+/* Archivo: src/pages/CalendarioStyles.css */
+/* Estilos para adaptar react-calendar al tema oscuro slate */
 
-    /* Contenedor principal del calendario */
-    .calendar-container .react-calendar {
-        width: 100%;
-        border: none; /* Quitar borde por defecto */
-        background-color: transparent; /* Hereda el fondo del contenedor padre (bg-gray-900) */
-        font-family: inherit; /* Usar fuente de la app */
-        line-height: 1.5em; /* Ajustar interlineado */
-      }
-  
-      /* Navegación (mes/año y flechas) */
-      .calendar-container .react-calendar__navigation {
-        display: flex;
-        height: 44px;
-        margin-bottom: 1em;
-        background-color: #1F2937; /* bg-gray-800 */
-        border-radius: 0.5rem; /* rounded-lg */
-      }
-  
-      .calendar-container .react-calendar__navigation button {
-        color: #D1D5DB; /* text-gray-300 */
-        min-width: 44px;
-        background: none;
-        font-size: 1rem; /* Ajustar tamaño fuente */
-        font-weight: bold;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.2s ease-in-out;
-      }
-  
-      .calendar-container .react-calendar__navigation button:enabled:hover,
-      .calendar-container .react-calendar__navigation button:enabled:focus {
-        background-color: #374151; /* bg-gray-700 */
-      }
-  
-      .calendar-container .react-calendar__navigation button[disabled] {
-        color: #6B7280; /* text-gray-500 */
-        background-color: #1F2937; /* bg-gray-800 */
-        cursor: not-allowed;
-      }
-  
-      /* Nombres de los días de la semana */
-      .calendar-container .react-calendar__month-view__weekdays {
-        text-align: center;
-        text-transform: uppercase;
-        font-weight: bold;
-        font-size: 0.75em;
-        color: #9CA3AF; /* text-gray-400 */
-        padding-bottom: 0.5em;
-        border-bottom: 1px solid #374151; /* border-gray-700 */
-        margin-bottom: 0.5em;
-      }
-  
-      .calendar-container .react-calendar__month-view__weekdays__weekday abbr {
-        text-decoration: none; /* Quitar subrayado */
-      }
-  
-      /* Botones de días, años, décadas */
-      .calendar-container .react-calendar__tile {
-        max-width: 100%;
-        padding: 10px 6.6667px;
-        background: none;
-        text-align: center;
-        line-height: 16px;
-        color: #D1D5DB; /* text-gray-300 */
-        border: none;
-        border-radius: 0.375rem; /* rounded-md */
-        cursor: pointer;
-        transition: background-color 0.2s ease-in-out;
-      }
-  
-      /* Estilo al pasar el ratón o enfocar */
-      .calendar-container .react-calendar__tile:enabled:hover,
-      .calendar-container .react-calendar__tile:enabled:focus {
-        background-color: #374151; /* bg-gray-700 */
-      }
-  
-      /* Día actual */
-      .calendar-container .react-calendar__tile--now {
-        background: #111827; /* bg-gray-900 (un poco más oscuro que el fondo) */
-        color: #6EE7B7; /* text-green-300 */
-        font-weight: bold;
-      }
-      .calendar-container .react-calendar__tile--now:enabled:hover,
-      .calendar-container .react-calendar__tile--now:enabled:focus {
-         background: #1F2937; /* bg-gray-800 */
-      }
-  
-      /* Día seleccionado */
-      .calendar-container .react-calendar__tile--active {
-        background: #10B981; /* bg-green-600 */
-        color: white;
-        font-weight: bold;
-      }
-      .calendar-container .react-calendar__tile--active:enabled:hover,
-      .calendar-container .react-calendar__tile--active:enabled:focus {
-        background: #059669; /* bg-green-700 */
-      }
-  
-      /* Días fuera del mes actual */
-      .calendar-container .react-calendar__month-view__days__day--neighboringMonth {
-        color: #6B7280; /* text-gray-500 */
-      }
-  
-      /* Vista de año y década */
-      .calendar-container .react-calendar__year-view__months__month,
-      .calendar-container .react-calendar__decade-view__years__year,
-      .calendar-container .react-calendar__century-view__decades__decade {
-         padding: 1.5em 0.5em; /* Más espacio vertical */
-      }
-  
-      
+/* Contenedor principal del calendario */
+.calendar-container .react-calendar {
+  width: 100%;
+  border: none;
+  background-color: transparent; /* Hereda de .card-base (slate-800) */
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5em;
+}
+
+/* Navegación (mes/año y flechas) */
+.calendar-container .react-calendar__navigation {
+  display: flex;
+  height: 48px; /* Un poco más de altura */
+  margin-bottom: 1em;
+  background-color: transparent; /* Sin fondo propio, deja que el card-base lo maneje */
+}
+
+.calendar-container .react-calendar__navigation button {
+  color: #cbd5e1; /* slate-300 */
+  min-width: 44px;
+  background: none;
+  font-size: 1rem;
+  font-weight: 600; /* semibold */
+  border: none;
+  border-radius: 0.375rem; /* rounded-md */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.calendar-container .react-calendar__navigation button:enabled:hover,
+.calendar-container .react-calendar__navigation button:enabled:focus {
+  background-color: #334155; /* slate-700 */
+  color: #f1f5f9; /* slate-100 */
+}
+
+.calendar-container .react-calendar__navigation button:disabled {
+  color: #64748b; /* slate-500 */
+  cursor: not-allowed;
+}
+
+/* Label del mes/año actual */
+.calendar-container .react-calendar__navigation__label {
+  flex-grow: 1 !important; /* Asegurar que ocupe espacio */
+  font-weight: 700 !important; /* bold */
+  font-size: 1.125rem !important; /* text-lg */
+  color: #e2e8f0 !important; /* slate-200 */
+}
+.calendar-container .react-calendar__navigation__label:hover,
+.calendar-container .react-calendar__navigation__label:focus {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+
+/* Nombres de los días de la semana */
+.calendar-container .react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600; /* semibold */
+  font-size: 0.75rem; /* text-xs */
+  color: #94a3b8; /* slate-400 */
+  padding-bottom: 0.75em;
+  /* border-bottom: 1px solid #334155; */ /* Opcional: slate-700 */
+  margin-bottom: 0.5em;
+}
+
+.calendar-container .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+/* Botones de días, años, décadas */
+.calendar-container .react-calendar__tile {
+  max-width: 100%;
+  padding: 0.75em 0.5em; /* Ajustar padding */
+  background: none;
+  text-align: center;
+  line-height: 1.25rem; /* Ajustar altura de línea */
+  color: #cbd5e1; /* slate-300 */
+  border: 1px solid transparent; /* Borde transparente para mantener layout en hover/focus */
+  border-radius: 0.375rem; /* rounded-md */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.calendar-container .react-calendar__tile:enabled:hover {
+  background-color: #334155; /* slate-700 */
+  color: #f1f5f9; /* slate-100 */
+}
+.calendar-container .react-calendar__tile:enabled:focus {
+  background-color: #334155; /* slate-700 */
+  color: #f1f5f9; /* slate-100 */
+  /* Opcional: outline para foco */
+  /* outline: 2px solid theme('colors.brand-accent-primary'); */
+  /* outline-offset: 2px; */
+}
+
+
+/* Día actual */
+.calendar-container .react-calendar__tile--now {
+  background: transparent;
+  border: 1px solid #4F46E5; /* indigo-600 o brand-accent-primary */
+  color: #A5B4FC; /* indigo-300 */
+  font-weight: 600;
+}
+.calendar-container .react-calendar__tile--now:enabled:hover,
+.calendar-container .react-calendar__tile--now:enabled:focus {
+  background-color: rgba(79, 70, 229, 0.2); /* indigo-600 con opacidad */
+  color: #C7D2FE; /* indigo-200 */
+}
+
+/* Día seleccionado */
+.calendar-container .react-calendar__tile--active {
+  background: #4F46E5; /* indigo-600 o brand-accent-primary */
+  color: white;
+  font-weight: 700; /* bold */
+}
+.calendar-container .react-calendar__tile--active:enabled:hover,
+.calendar-container .react-calendar__tile--active:enabled:focus {
+  background: #4338CA; /* indigo-700 o un tono más oscuro del brand-accent-primary */
+}
+
+/* Días fuera del mes actual */
+.calendar-container .react-calendar__month-view__days__day--neighboringMonth {
+  color: #64748b; /* slate-500 */
+}
+.calendar-container .react-calendar__month-view__days__day--neighboringMonth:enabled:hover,
+.calendar-container .react-calendar__month-view__days__day--neighboringMonth:enabled:focus {
+  color: #94a3b8; /* slate-400 */
+  background-color: #1e293b; /* slate-800 */
+}
+
+
+/* Vistas de año y década */
+.calendar-container .react-calendar__year-view__months__month,
+.calendar-container .react-calendar__decade-view__years__year,
+.calendar-container .react-calendar__century-view__decades__decade {
+  padding: 1.75em 0.5em; /* Más espacio vertical */
+  color: #cbd5e1; /* slate-300 */
+}
+
+.calendar-container .react-calendar__year-view__months__month:enabled:hover,
+.calendar-container .react-calendar__decade-view__years__year:enabled:hover,
+.calendar-container .react-calendar__century-view__decades__decade:enabled:hover,
+.calendar-container .react-calendar__year-view__months__month:enabled:focus,
+.calendar-container .react-calendar__decade-view__years__year:enabled:focus,
+.calendar-container .react-calendar__century-view__decades__decade:enabled:focus {
+  background-color: #334155; /* slate-700 */
+  color: #f1f5f9; /* slate-100 */
+}
+
+/* Estilo para el indicador de actividad (el punto debajo del día) */
+.calendar-container .react-calendar__tile .bg-green-500 { /* Si usas este color para ingresos */
+  background-color: theme('colors.green.500') !important;
+}
+.calendar-container .react-calendar__tile .bg-red-500 { /* Si usas este color para egresos */
+  background-color: theme('colors.red.500') !important;
+}
+.calendar-container .react-calendar__tile .bg-slate-500 { /* Para otros/transferencias */
+  background-color: theme('colors.slate.500') !important;
+}
+
