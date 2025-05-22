@@ -15,7 +15,7 @@ const BellIcon = ({ hasUnread }) => (
   </svg>
 );
 
-function NotificationBell({ session, navigateTo }) {
+function NotificationBell({ session }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notificaciones, setNotificaciones] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);

@@ -1,5 +1,5 @@
 // Archivo: src/pages/Objetivos.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Removed useMemo
 import { useSettings } from '../context/SettingsContext';
 import { obtenerCarteras } from '../lib/carterasApi';
 import {
@@ -47,7 +47,7 @@ const Trash2Icon = ({ className = "w-4 h-4" }) => (
 // Clases de Tailwind reutilizables
 const baseLabelClasses = "block text-sm font-medium text-slate-300 mb-1.5";
 const baseInputClasses = "block w-full px-3.5 py-2.5 bg-slate-700 border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 text-sm shadow-sm focus:ring-2 focus:ring-brand-accent-primary focus:border-brand-accent-primary disabled:opacity-60";
-const baseSelectClasses = `${baseInputClasses} appearance-none pr-10`;
+// Removed baseSelectClasses
 const baseButtonClasses = (color = 'indigo', size = 'md') =>
   `inline-flex items-center justify-center px-${size === 'sm' ? 3 : 5} py-${size === 'sm' ? '1.5' : '2.5'} border border-transparent rounded-lg shadow-md text-${size === 'sm' ? 'xs' : 'sm'} font-semibold text-white transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed
   ${color === 'green' ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : ''}
@@ -103,7 +103,7 @@ function CarterasSelector({ allCarteras, linkedCarteraIds, onChange, disabled })
   );
 }
 
-const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch (e) { return ''; } };
+const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch { return ''; } }; // _e removed
 
 function Objetivos({ session }) {
     const { currency, loadingSettings } = useSettings();
@@ -162,8 +162,8 @@ function Objetivos({ session }) {
         const datosObjetivo = { nombre: nombre.trim(), monto_objetivo: montoNum, fecha_objetivo: fechaObjetivo || null, notas: notas.trim() || null };
         try {
             let objetivoGuardadoId;
-            if (editandoObjetivo) { const { data, error: errorEdit } = await editarObjetivo(editandoObjetivo.id, datosObjetivo); if (errorEdit) throw errorEdit; objetivoGuardadoId = editandoObjetivo.id; }
-            else { const { data, error: errorAdd } = await agregarObjetivo(datosObjetivo, userId); if (errorAdd) throw errorAdd; objetivoGuardadoId = data.id; }
+            if (editandoObjetivo) { const { error: errorEdit } = await editarObjetivo(editandoObjetivo.id, datosObjetivo); if (errorEdit) throw errorEdit; objetivoGuardadoId = editandoObjetivo.id; } // Removed data from destructuring
+            else { const { data: objetivoAgregado, error: errorAdd } = await agregarObjetivo(datosObjetivo, userId); if (errorAdd) throw errorAdd; objetivoGuardadoId = objetivoAgregado.id; } // Kept data as objetivoAgregado
             const idsOriginales = editandoObjetivo?.carteras_vinculadas?.map(c => c.id) || []; const idsNuevos = linkedCarteraIds;
             if (JSON.stringify(idsOriginales.sort()) !== JSON.stringify(idsNuevos.sort())) { const { error: linkError } = await actualizarCarterasVinculadasObjetivo(objetivoGuardadoId, idsNuevos, userId); if (linkError) { setError(`Obj guardado, error vínculos: ${linkError.message}`); } }
             resetForm(); await cargarDatos();
@@ -173,7 +173,7 @@ function Objetivos({ session }) {
 
     const handleEliminarClick = async (id) => { if (!window.confirm(`¿Eliminar?`)) return; setError(null); setIsSubmitting(true); try { const { error: e } = await eliminarObjetivo(id); if (e) throw e; setObjetivos(prev => prev.filter(o => o.id !== id)); if (editandoObjetivo?.id === id) { resetForm(); } await cargarDatos(); } catch (err) { setError(`Error: ${err.message}`); } finally { setIsSubmitting(false); }};
     const formatearMonedaLocal = useCallback((monto) => { if (loadingSettings || typeof monto !== 'number' || isNaN(monto)) return '---'; return monto.toLocaleString('es-MX', { style: 'currency', currency: currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }); }, [currency, loadingSettings]);
-    const formatearFechaCorta = (fechaIso) => { if (!fechaIso) return 'N/A'; try { return new Date(fechaIso + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return 'Inválida'; } };
+    const formatearFechaCorta = (fechaIso) => { if (!fechaIso) return 'N/A'; try { return new Date(fechaIso + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return 'Inválida'; } }; // _e removed
 
     return (
         <div className="space-y-8">

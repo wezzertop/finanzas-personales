@@ -58,7 +58,7 @@ function ProgresoLogrosPage({ session }) {
     nombreNivel,
     xpParaSiguienteNivel,
     nombreSiguienteNivel,
-    progresoXpNivelActual,
+    // progresoXpNivelActual, // Removed as it's unused
     totalXpParaNivelActual,
     loadingGamificacion,
     fetchEstadoGamificacion

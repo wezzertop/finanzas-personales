@@ -1,13 +1,13 @@
 // Archivo: src/pages/Inversiones.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Removed useMemo
 import { useSettings } from '../context/SettingsContext';
 import {
   obtenerTiposActivo, agregarTipoActivo, editarTipoActivo, eliminarTipoActivo,
-  obtenerActivosInversion, agregarActivoInversion, editarActivoInversion, eliminarActivoInversion,
-  obtenerTransaccionesInversionPorActivo, agregarTransaccionInversion, editarTransaccionInversion, eliminarTransaccionInversion,
+  // obtenerActivosInversion, agregarActivoInversion, editarActivoInversion, eliminarActivoInversion, // Removed
+  // obtenerTransaccionesInversionPorActivo, agregarTransaccionInversion, editarTransaccionInversion, eliminarTransaccionInversion, // Removed
   obtenerPortafolio,
 } from '../lib/inversionesApi';
-import { useGamificacion } from '../context/GamificacionContext';
+// Removed: import { useGamificacion } from '../context/GamificacionContext';
 
 // --- Iconos SVG Inline ---
 const TrendingUpIcon = ({ className = "page-title-icon" }) => (
@@ -33,11 +33,11 @@ const Trash2Icon = ({ className = "w-5 h-5" }) => ( <svg xmlns="http://www.w3.or
 const RefreshCwIcon = ({ className = "w-4 h-4" }) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>);
 // --- Fin Iconos SVG Inline ---
 
-const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } const d = new Date(date); if (isNaN(d.getTime())) return ''; return d.toISOString().split('T')[0]; } catch (e) { console.error("Error formateando fecha:", date, e); return ''; } };
+const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } const d = new Date(date); if (isNaN(d.getTime())) return ''; return d.toISOString().split('T')[0]; } catch { console.error("Error formateando fecha:", date); return ''; } }; // _e removed
 
 function Inversiones({ session }) {
-  const { currency, loadingSettings, supportedCurrencies } = useSettings();
-  const { otorgarXP, verificarYOtorgarLogro, fetchEstadoGamificacion } = useGamificacion();
+  const { currency, loadingSettings } = useSettings(); // Removed supportedCurrencies
+  // Removed: otorgarXP, verificarYOtorgarLogro, fetchEstadoGamificacion from useGamificacion()
 
   const [vistaActiva, setVistaActiva] = useState('portafolio');
   const [cargandoGlobal, setCargandoGlobal] = useState(true);
@@ -49,22 +49,13 @@ function Inversiones({ session }) {
   const [mostrarFormTipo, setMostrarFormTipo] = useState(false);
   const [tipoEditando, setTipoEditando] = useState(null);
   const [formTipo, setFormTipo] = useState({ nombre: '', descripcion: '' });
-  const [activosInversion, setActivosInversion] = useState([]);
-  const [cargandoActivos, setCargandoActivos] = useState(false);
-  const [mostrarFormActivo, setMostrarFormActivo] = useState(false);
-  const [activoEditando, setActivoEditando] = useState(null);
-  const [formActivo, setFormActivo] = useState({ nombre_activo: '', ticker: '', tipo_activo_id: '', moneda_principal_activo: currency, precio_mercado_actual_manual: '', fecha_precio_mercado_actual: formatYMD(new Date()), descripcion: '' });
-  const [activoSeleccionadoParaTrans, setActivoSeleccionadoParaTrans] = useState(null);
-  const [transaccionesActivo, setTransaccionesActivo] = useState([]);
-  const [cargandoTransacciones, setCargandoTransacciones] = useState(false);
-  const [mostrarFormTransaccion, setMostrarFormTransaccion] = useState(false);
-  const [transaccionEditando, setTransaccionEditando] = useState(null);
-  const [formTransaccion, setFormTransaccion] = useState({ activo_id: '', tipo_transaccion: 'Compra', fecha_transaccion: formatYMD(new Date()), cantidad: '', precio_por_unidad: '', comisiones: '', notas: '' });
+  // Removed: formActivo and setFormActivo state
+  const [activoSeleccionadoParaTrans, _setActivoSeleccionadoParaTrans] = useState(null);
   
   // Clases de Tailwind reutilizables
   const baseLabelClasses = "block text-sm font-medium text-slate-300 mb-1.5";
   const baseInputClasses = "block w-full px-3.5 py-2.5 bg-slate-700 border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 text-sm shadow-sm focus:ring-2 focus:ring-brand-accent-primary focus:border-brand-accent-primary disabled:opacity-60";
-  const baseSelectClasses = `${baseInputClasses} appearance-none pr-10`;
+  // Removed: baseSelectClasses (it was unused)
   const baseButtonClasses = (color = 'indigo', size = 'md', isActive = false) =>
     `inline-flex items-center justify-center px-${size === 'sm' ? 3 : 4} py-${size === 'sm' ? '1.5' : '2'} border border-transparent rounded-lg shadow-sm text-${size === 'sm' ? 'xs' : 'sm'} font-medium transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed
     ${isActive ? `bg-brand-accent-primary text-white focus:ring-brand-accent-primary` : 
@@ -81,33 +72,19 @@ function Inversiones({ session }) {
   const tableCellClasses = "px-3 py-3.5 whitespace-nowrap text-sm";
   const iconButtonClasses = "p-1.5 text-slate-400 hover:text-white rounded-md transition-colors duration-150 hover:bg-slate-700";
 
-  useEffect(() => { if (!loadingSettings) { setFormActivo(prev => ({ ...prev, moneda_principal_activo: currency })); } }, [currency, loadingSettings]);
+  // Removed useEffect related to formActivo and currency/loadingSettings
 
   const cargarPortafolio = useCallback(async () => { if (!session?.user?.id) return; setCargandoPortafolio(true); setErrorGlobal(null); try { const { data, error } = await obtenerPortafolio(); if (error) throw error; setPortafolio(data || []); } catch (err) { setErrorGlobal(`Error portafolio: ${err.message}`); setPortafolio([]); } finally { setCargandoPortafolio(false); } }, [session]);
   const cargarTiposActivo = useCallback(async () => { if (!session?.user?.id) return; setCargandoTipos(true); setErrorGlobal(null); try { const { data, error } = await obtenerTiposActivo(); if (error) throw error; setTiposActivo(data || []); } catch (err) { setErrorGlobal(`Error tipos: ${err.message}`); setTiposActivo([]); } finally { setCargandoTipos(false); } }, [session]);
-  const cargarActivosInversion = useCallback(async () => { if (!session?.user?.id) return; setCargandoActivos(true); setErrorGlobal(null); try { const { data, error } = await obtenerActivosInversion(); if (error) throw error; setActivosInversion(data || []); } catch (err) { setErrorGlobal(`Error activos: ${err.message}`); setActivosInversion([]); } finally { setCargandoActivos(false); } }, [session]);
-  const cargarTransaccionesDeActivo = useCallback(async (activoId) => { if (!session?.user?.id || !activoId) return; setCargandoTransacciones(true); setErrorGlobal(null); try { const { data, error } = await obtenerTransaccionesInversionPorActivo(activoId); if (error) throw error; setTransaccionesActivo(data || []); } catch (err) { setErrorGlobal(`Error transacciones: ${err.message}`); setTransaccionesActivo([]); } finally { setCargandoTransacciones(false); } }, [session]);
 
-  useEffect(() => { const cargarTodo = async () => { setCargandoGlobal(true); await Promise.all([cargarPortafolio(), cargarTiposActivo(), cargarActivosInversion()]); setCargandoGlobal(false); }; if (session?.user?.id) { cargarTodo(); } else { setCargandoGlobal(false); } }, [session, cargarPortafolio, cargarTiposActivo, cargarActivosInversion]);
+  useEffect(() => { const cargarTodo = async () => { setCargandoGlobal(true); await Promise.all([cargarPortafolio(), cargarTiposActivo()]); setCargandoGlobal(false); }; if (session?.user?.id) { cargarTodo(); } else { setCargandoGlobal(false); } }, [session, cargarPortafolio, cargarTiposActivo]);
 
   const handleFormTipoChange = (e) => setFormTipo({ ...formTipo, [e.target.name]: e.target.value });
   const handleSubmitTipo = async (e) => { e.preventDefault(); setCargandoTipos(true); try { if (tipoEditando) { await editarTipoActivo(tipoEditando.id, formTipo); } else { await agregarTipoActivo(formTipo); } setMostrarFormTipo(false); setTipoEditando(null); setFormTipo({ nombre: '', descripcion: '' }); await cargarTiposActivo(); } catch (err) { setErrorGlobal(`Error tipo: ${err.message}`); } finally { setCargandoTipos(false); } };
   const handleEditarTipo = (tipo) => { setTipoEditando(tipo); setFormTipo({ nombre: tipo.nombre, descripcion: tipo.descripcion || '' }); setMostrarFormTipo(true); };
-  const handleEliminarTipo = async (id) => { if (window.confirm('¿Eliminar tipo?')) { setCargandoTipos(true); try { await eliminarTipoActivo(id); await cargarTiposActivo(); await cargarActivosInversion(); } catch (err) { setErrorGlobal(`Error tipo del: ${err.message}`); } finally { setCargandoTipos(false); } } };
+  const handleEliminarTipo = async (id) => { if (window.confirm('¿Eliminar tipo?')) { setCargandoTipos(true); try { await eliminarTipoActivo(id); await cargarTiposActivo(); } catch (err) { setErrorGlobal(`Error tipo del: ${err.message}`); } finally { setCargandoTipos(false); } } };
 
-  const handleFormActivoChange = (e) => setFormActivo({ ...formActivo, [e.target.name]: e.target.value });
-  const handleSubmitActivo = async (e) => { e.preventDefault(); setCargandoActivos(true); const datosParaGuardar = { ...formActivo, tipo_activo_id: formActivo.tipo_activo_id ? parseInt(formActivo.tipo_activo_id, 10) : null, precio_mercado_actual_manual: formActivo.precio_mercado_actual_manual ? parseFloat(formActivo.precio_mercado_actual_manual) : 0, fecha_precio_mercado_actual: formActivo.fecha_precio_mercado_actual || null }; try { if (activoEditando) { await editarActivoInversion(activoEditando.id, datosParaGuardar); } else { await agregarActivoInversion(datosParaGuardar); } setMostrarFormActivo(false); setActivoEditando(null); setFormActivo({ nombre_activo: '', ticker: '', tipo_activo_id: '', moneda_principal_activo: currency, precio_mercado_actual_manual: '', fecha_precio_mercado_actual: formatYMD(new Date()), descripcion: '' }); await cargarActivosInversion(); await cargarPortafolio(); } catch (err) { setErrorGlobal(`Error activo: ${err.message}`); } finally { setCargandoActivos(false); } };
-  const handleEditarActivo = (activo) => { setActivoEditando(activo); setFormActivo({ nombre_activo: activo.nombre_activo, ticker: activo.ticker || '', tipo_activo_id: activo.tipo_activo_id || '', moneda_principal_activo: activo.moneda_principal_activo || currency, precio_mercado_actual_manual: activo.precio_mercado_actual_manual?.toString() || '', fecha_precio_mercado_actual: formatYMD(activo.fecha_precio_mercado_actual || new Date()), descripcion: activo.descripcion || '' }); setMostrarFormActivo(true); };
-  const handleEliminarActivo = async (id) => { if (window.confirm('¿Eliminar activo y transacciones?')) { setCargandoActivos(true); try { await eliminarActivoInversion(id); await cargarActivosInversion(); await cargarPortafolio(); if (activoSeleccionadoParaTrans?.id === id) setActivoSeleccionadoParaTrans(null); } catch (err) { setErrorGlobal(`Error activo del: ${err.message}`); } finally { setCargandoActivos(false); } } };
-
-  const handleFormTransaccionChange = (e) => setFormTransaccion({ ...formTransaccion, [e.target.name]: e.target.value });
-  const handleSubmitTransaccion = async (e) => { e.preventDefault(); if (!activoSeleccionadoParaTrans) { setErrorGlobal("Activo no seleccionado."); return; } setCargandoTransacciones(true); const datosParaGuardar = { ...formTransaccion, activo_id: activoSeleccionadoParaTrans.id, cantidad: parseFloat(formTransaccion.cantidad), precio_por_unidad: parseFloat(formTransaccion.precio_por_unidad), comisiones: parseFloat(formTransaccion.comisiones) || 0, }; let fueNuevaCompra = false; try { if (transaccionEditando) { await editarTransaccionInversion(transaccionEditando.id, datosParaGuardar); } else { await agregarTransaccionInversion(datosParaGuardar); if (datosParaGuardar.tipo_transaccion === 'Compra') fueNuevaCompra = true; } setMostrarFormTransaccion(false); setTransaccionEditando(null); setFormTransaccion({ activo_id: activoSeleccionadoParaTrans.id, tipo_transaccion: 'Compra', fecha_transaccion: formatYMD(new Date()), cantidad: '', precio_por_unidad: '', comisiones: '', notas: '' }); await cargarTransaccionesDeActivo(activoSeleccionadoParaTrans.id); await cargarPortafolio(); if (fueNuevaCompra) { await otorgarXP(50, `NUEVA_INVERSION_COMPRA:${activoSeleccionadoParaTrans.id}`); await verificarYOtorgarLogro('INVERSOR_INICIAL', { activo_id: activoSeleccionadoParaTrans.id, nombre_activo: activoSeleccionadoParaTrans.nombre_activo }); await fetchEstadoGamificacion(); } } catch (err) { setErrorGlobal(`Error transacción: ${err.message}`); } finally { setCargandoTransacciones(false); } };
-  const handleEditarTransaccion = (tx) => { setTransaccionEditando(tx); setFormTransaccion({ activo_id: tx.activo_id, tipo_transaccion: tx.tipo_transaccion, fecha_transaccion: formatYMD(tx.fecha_transaccion), cantidad: tx.cantidad.toString(), precio_por_unidad: tx.precio_por_unidad.toString(), comisiones: tx.comisiones?.toString() || '', notas: tx.notas || '' }); setMostrarFormTransaccion(true); };
-  const handleEliminarTransaccion = async (id) => { if (window.confirm('¿Eliminar transacción?')) { setCargandoTransacciones(true); try { await eliminarTransaccionInversion(id); await cargarTransaccionesDeActivo(activoSeleccionadoParaTrans.id); await cargarPortafolio(); } catch (err) { setErrorGlobal(`Error tx del: ${err.message}`); } finally { setCargandoTransacciones(false); } } };
-
-  const seleccionarActivoParaTransacciones = (activo) => { setActivoSeleccionadoParaTrans(activo); setFormTransaccion(prev => ({ ...prev, activo_id: activo.id, tipo_transaccion: 'Compra', fecha_transaccion: formatYMD(new Date()), cantidad: '', precio_por_unidad: '', comisiones: '', notas: '' })); cargarTransaccionesDeActivo(activo.id); setVistaActiva('transacciones'); };
-
-  const formatearMonedaLocal = useCallback((monto, codMoneda = currency, decimales = 2) => { if (loadingSettings || typeof monto !== 'number' || isNaN(monto)) return '---'; try { return monto.toLocaleString('es-MX', { style: 'currency', currency: codMoneda, minimumFractionDigits: decimales, maximumFractionDigits: decimales }); } catch (e) { return `${monto.toFixed(decimales)} ${codMoneda}`; } }, [currency, loadingSettings]);
+  const formatearMonedaLocal = useCallback((monto, codMoneda = currency, decimales = 2) => { if (loadingSettings || typeof monto !== 'number' || isNaN(monto)) return '---'; try { return monto.toLocaleString('es-MX', { style: 'currency', currency: codMoneda, minimumFractionDigits: decimales, maximumFractionDigits: decimales }); } catch { return `${monto.toFixed(decimales)} ${codMoneda}`; } }, [currency, loadingSettings]); // _e removed
   const formatearPorcentaje = (valor) => { if (typeof valor !== 'number' || isNaN(valor)) return '-'; return `${valor.toFixed(2)}%`; }
 
   const renderVista = () => {

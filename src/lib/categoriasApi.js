@@ -1,11 +1,5 @@
 import { supabase } from './supabaseClient';
 
-// Helper para obtener ID de usuario (opcional aquí, pero útil)
-const getCurrentUserId = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
-};
-
 /**
  * Obtiene categorías, opcionalmente filtradas por tipo.
  * @param {'Ingreso' | 'Egreso' | null} [tipo=null] - Filtrar por tipo o null para todas.

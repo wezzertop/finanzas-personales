@@ -83,7 +83,7 @@ function Graficos({ session }) {
   }, [currency, loadingSettings]);
 
   const RADIAN = Math.PI / 180;
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value }) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => { // Removed _index, _name, _value
     if (percent < 0.03) return null; // No mostrar etiqueta si el segmento es muy pequeño
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);

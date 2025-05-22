@@ -1,5 +1,6 @@
 // Archivo: src/pages/Transacciones.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabaseClient'; // Added import
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import { obtenerTransacciones, agregarTransaccion, editarTransaccion, eliminarTransaccion } from '../lib/transaccionesApi';
@@ -14,7 +15,7 @@ import { useGamificacion } from '../context/GamificacionContext';
 const tiposFiltro = ['Ingreso', 'Egreso', 'Transferencia'];
 
 // Añadir navigateTo como prop, aunque no se use directamente aquí, es buena práctica si se pasa desde App
-function Transacciones({ session, navigateTo, initialNavigationState, clearNavigationState }) {
+function Transacciones({ session, initialNavigationState, clearNavigationState }) { // Removed navigateTo
   const [transacciones, setTransacciones] = useState([]);
   const [transaccionAEditar, setTransaccionAEditar] = useState(null);
   const [cargando, setCargando] = useState(true);

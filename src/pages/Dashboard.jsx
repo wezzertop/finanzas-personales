@@ -1,5 +1,5 @@
 // Archivo: src/pages/Dashboard.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     obtenerResumenFinanciero, obtenerResumenMensual, obtenerResumenPresupuestos,
     obtenerResumenObjetivos, obtenerPatrimonioNeto, obtenerTotalDeudas
@@ -62,7 +62,7 @@ function SummaryCard({ title, value, icon, colorClass = 'text-brand-accent-prima
   );
 }
 
-const formatFechaCorta = (f) => { if (!f) return 'N/A'; try { return new Date(f + 'T00:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }); } catch (e) { return 'Inv.'; } };
+const formatFechaCorta = (f) => { if (!f) return 'N/A'; try { return new Date(f + 'T00:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }); } catch { return 'Inv.'; } }; // Removed _e
 const getInicioMesActual = () => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('sv-SE');
 const getFinMesActual = () => new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('sv-SE');
 

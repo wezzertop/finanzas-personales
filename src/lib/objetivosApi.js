@@ -1,15 +1,5 @@
 import { supabase } from './supabaseClient';
 
-// --- Helper Function (Optional, kept for potential future use) ---
-const getCurrentUserId = async () => {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) {
-    console.error("Error getting session:", sessionError);
-    return null;
-  }
-  return session?.user?.id ?? null;
-};
-
 // --- Main API Functions ---
 
 /**
@@ -88,7 +78,7 @@ export const editarObjetivo = async (id, datosActualizados) => {
        return { data: null, error: { message: 'Target amount must be positive.'}};
    }
    // Ensure fecha_objetivo is null if empty string is passed
-   if (datosActualizados.hasOwnProperty('fecha_objetivo')) {
+   if (Object.prototype.hasOwnProperty.call(datosActualizados, 'fecha_objetivo')) {
        datosActualizados.fecha_objetivo = datosActualizados.fecha_objetivo || null;
    }
 

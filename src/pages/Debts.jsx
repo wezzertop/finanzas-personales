@@ -193,7 +193,6 @@ function Debts({ session }) {
 
   const formatearMonedaLocal = useCallback((m) => { if (loadingSettings || typeof m !== 'number' || isNaN(m)) return '---'; return m.toLocaleString('es-MX', { style: 'currency', currency: currency }); }, [currency, loadingSettings]);
   const formatearPorcentaje = (p) => { if (typeof p !== 'number' || isNaN(p)) return '-'; return `${p.toFixed(2)}%`; };
-  const formatearFechaCorta = (f) => { if (!f) return 'N/A'; try { return new Date(f + 'T00:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return 'Inv.'; } };
 
   return (
     <div className="space-y-8">
