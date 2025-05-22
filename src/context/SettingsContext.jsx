@@ -47,7 +47,7 @@ export const SettingsProvider = ({ children }) => {
     loadUserSettings();
 
     // Escuchar cambios de sesión para recargar si cambia el usuario
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => { // Removed _session
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
             console.log("[SettingsContext] Sesión cambió, recargando configuración...");
             loadUserSettings();

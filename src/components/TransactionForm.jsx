@@ -32,15 +32,10 @@ const XCircleIcon = ({ className = "w-4 h-4" }) => (
 
 const tipos = ['Ingreso', 'Egreso', 'Transferencia'];
 
-function SplitInputRow({ index, split, categoriasEgreso, onSplitChange, onRemoveSplit, currency, loadingSettings }) {
-  const { currency: contextCurrency, loadingSettings: contextLoadingSettings } = useSettings();
-  const currentCurrency = currency || contextCurrency;
+function SplitInputRow({ index, split, categoriasEgreso, onSplitChange, onRemoveSplit, loadingSettings }) { // Removed currency prop
+  const { loadingSettings: contextLoadingSettings } = useSettings(); // Removed contextCurrency
+  // Removed: const currentCurrency = currency || contextCurrency;
   const isLoadingSettings = loadingSettings || contextLoadingSettings;
-
-  const formatearMonedaLocal = useCallback((monto) => {
-    if (isLoadingSettings || typeof monto !== 'number' || isNaN(monto)) return '---';
-    return monto.toLocaleString('es-MX', { style: 'currency', currency: currentCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }, [currentCurrency, isLoadingSettings]);
 
   const baseInputClasses = "block w-full px-3 py-2 bg-slate-700 border-slate-600 rounded-md text-slate-100 placeholder-slate-400 text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-60";
   const baseSelectClasses = `${baseInputClasses} appearance-none pr-8 bg-slate-700`;

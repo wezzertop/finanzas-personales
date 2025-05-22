@@ -1,5 +1,5 @@
 // Archivo: src/pages/Configuracion.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Added useMemo
 import { useSettings } from '../context/SettingsContext';
 import {
   obtenerConfiguracionAlertasUsuario,
@@ -25,7 +25,7 @@ function Configuracion({ session }) {
   const [isSavingCurrency, setIsSavingCurrency] = useState(false);
   const [saveCurrencyMessage, setSaveCurrencyMessage] = useState('');
 
-  const initialAlertSettings = {
+  const initialAlertSettings = useMemo(() => ({
     alerta_presupuesto_activa: true,
     alerta_presupuesto_umbral_porcentaje: 80,
     notificar_presupuesto_excedido: true,
@@ -37,7 +37,7 @@ function Configuracion({ session }) {
     alerta_vencimiento_deuda_dias_anticipacion: 3,
     alerta_saldo_bajo_cartera_activa: false,
     alerta_saldo_bajo_cartera_umbral: 0,
-  };
+  }), []);
   const [alertSettings, setAlertSettings] = useState(initialAlertSettings);
   const [loadingAlertSettings, setLoadingAlertSettings] = useState(true);
   const [isSavingAlerts, setIsSavingAlerts] = useState(false);
@@ -78,7 +78,7 @@ function Configuracion({ session }) {
     } finally {
       setLoadingAlertSettings(false);
     }
-  }, [session]); // initialAlertSettings no necesita ser dependencia si es constante
+  }, [session, initialAlertSettings]);
 
   useEffect(() => { cargarConfigAlertas(); }, [cargarConfigAlertas]);
 
@@ -101,7 +101,17 @@ function Configuracion({ session }) {
     if (!alertSettings) return;
     setIsSavingAlerts(true); setSaveAlertsMessage(''); setLoadAlertSettingsError('');
     try {
-      const { user_id, id, fecha_creacion, fecha_actualizacion, ...settingsToUpdate } = alertSettings;
+      const { ...settingsToUpdate } = alertSettings; // Removed unused destructured variables
+      // user_id, id, fecha_creacion, fecha_actualizacion are implicitly excluded from settingsToUpdate if they existed on alertSettings
+      // However, the more direct way if they should NOT be part of settingsToUpdate, is to ensure they are not passed or are filtered out.
+      // For now, just removing them from destructuring as they are unused locally.
+      // If these properties are on alertSettings and should NOT be sent to the API, they need to be explicitly deleted from settingsToUpdate or filtered.
+      // Based on the var names, they seem like DB fields not meant for update payload.
+      delete settingsToUpdate.user_id;
+      delete settingsToUpdate.id;
+      delete settingsToUpdate.fecha_creacion;
+      delete settingsToUpdate.fecha_actualizacion;
+
       await actualizarConfiguracionAlertasUsuario(settingsToUpdate);
       setSaveAlertsMessage('¡Alertas guardadas!');
       setTimeout(() => setSaveAlertsMessage(''), 3000);

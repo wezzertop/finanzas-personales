@@ -185,10 +185,10 @@ export const editarActivoInversion = async (id, datosActualizados) => {
   if (datosActualizados.precio_mercado_actual_manual !== undefined) {
     datosActualizados.precio_mercado_actual_manual = parseFloat(datosActualizados.precio_mercado_actual_manual) || 0;
   }
-   if (datosActualizados.hasOwnProperty('fecha_precio_mercado_actual')) {
+   if (Object.prototype.hasOwnProperty.call(datosActualizados, 'fecha_precio_mercado_actual')) {
        datosActualizados.fecha_precio_mercado_actual = datosActualizados.fecha_precio_mercado_actual || null;
    }
-   if (datosActualizados.hasOwnProperty('tipo_activo_id')) {
+   if (Object.prototype.hasOwnProperty.call(datosActualizados, 'tipo_activo_id')) {
        datosActualizados.tipo_activo_id = datosActualizados.tipo_activo_id || null;
    }
 

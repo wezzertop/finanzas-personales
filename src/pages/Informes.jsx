@@ -1,9 +1,9 @@
 // Archivo: src/pages/Informes.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { obtenerEgresosFiltrados, obtenerInformeFlujoMensual, obtenerComparacionMensual } from '../lib/informesApi';
-import { obtenerCategorias } from '../lib/categoriasApi';
-import { obtenerCarteras } from '../lib/carterasApi';
+// Removed: obtenerEgresosFiltrados, obtenerInformeFlujoMensual, obtenerComparacionMensual from '../lib/informesApi';
+// Removed: obtenerCategorias from '../lib/categoriasApi';
+// Removed: obtenerCarteras from '../lib/carterasApi';
 import TransactionList from '../components/TransactionList'; // Importamos TransactionList
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -20,13 +20,13 @@ const GitCompareIcon = ({ className = "w-4 h-4" }) => (
 // --- Fin Iconos SVG Inline ---
 
 const getDefaultDateRange = () => { const t = new Date(); const f = new Date(t.getFullYear(), t.getMonth(), 1).toLocaleDateString('sv-SE'); const l = new Date(t.getFullYear(), t.getMonth() + 1, 0).toLocaleDateString('sv-SE'); return { inicio: f, fin: l }; };
-const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch (e) { return ''; } };
+// Removed formatYMD
 const getInicioAnioActual = () => new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('sv-SE');
 const getFinAnioActual = () => new Date(new Date().getFullYear(), 11, 31).toLocaleDateString('sv-SE');
 const getPrimerDiaMes = (date) => new Date(date.getFullYear(), date.getMonth(), 1).toLocaleDateString('sv-SE');
 const getMesAnterior = (date) => new Date(date.getFullYear(), date.getMonth() - 1, 1);
 
-function Informes({ session }) {
+function Informes() { // Removed session prop
     const { currency, loadingSettings } = useSettings();
 
     const [fechaInicioGastos, setFechaInicioGastos] = useState(getDefaultDateRange().inicio);
@@ -34,28 +34,28 @@ function Informes({ session }) {
     const [selectedCategoriaIdGastos, setSelectedCategoriaIdGastos] = useState('');
     const [selectedCarteraIdGastos, setSelectedCarteraIdGastos] = useState('');
     const [tagsStringFiltro, setTagsStringFiltro] = useState('');
-    const [datosInformeGastos, setDatosInformeGastos] = useState([]);
-    const [cargandoInformeGastos, setCargandoInformeGastos] = useState(false);
-    const [errorInformeGastos, setErrorInformeGastos] = useState(null);
-    const [informeGastosGenerado, setInformeGastosGenerado] = useState(false);
+    const [datosInformeGastos, _setDatosInformeGastos] = useState([]);
+    const [cargandoInformeGastos, _setCargandoInformeGastos] = useState(false);
+    const [errorInformeGastos, _setErrorInformeGastos] = useState(null);
+    const [informeGastosGenerado, _setInformeGastosGenerado] = useState(false);
 
     const [fechaInicioFlujo, setFechaInicioFlujo] = useState(getInicioAnioActual());
     const [fechaFinFlujo, setFechaFinFlujo] = useState(getFinAnioActual());
-    const [datosFlujoCaja, setDatosFlujoCaja] = useState([]);
-    const [cargandoFlujoCaja, setCargandoFlujoCaja] = useState(false);
-    const [errorFlujoCaja, setErrorFlujoCaja] = useState(null);
-    const [informeFlujoGenerado, setInformeFlujoGenerado] = useState(false);
+    const [datosFlujoCaja, _setDatosFlujoCaja] = useState([]);
+    const [cargandoFlujoCaja, _setCargandoFlujoCaja] = useState(false);
+    const [errorFlujoCaja, _setErrorFlujoCaja] = useState(null);
+    const [informeFlujoGenerado, _setInformeFlujoGenerado] = useState(false);
 
     const [mes1Comparacion, setMes1Comparacion] = useState(getPrimerDiaMes(getMesAnterior(new Date())));
     const [mes2Comparacion, setMes2Comparacion] = useState(getPrimerDiaMes(new Date()));
-    const [datosComparacion, setDatosComparacion] = useState(null);
-    const [cargandoComparacion, setCargandoComparacion] = useState(false);
-    const [errorComparacion, setErrorComparacion] = useState(null);
-    const [informeComparacionGenerado, setInformeComparacionGenerado] = useState(false);
+    const [datosComparacion, _setDatosComparacion] = useState(null);
+    const [cargandoComparacion, _setCargandoComparacion] = useState(false);
+    const [errorComparacion, _setErrorComparacion] = useState(null);
+    const [informeComparacionGenerado, _setInformeComparacionGenerado] = useState(false);
 
-    const [categoriasEgreso, setCategoriasEgreso] = useState([]);
-    const [carteras, setCarteras] = useState([]);
-    const [loadingRefs, setLoadingRefs] = useState(true);
+    const [categoriasEgreso, _setCategoriasEgreso] = useState([]);
+    const [carteras, _setCarteras] = useState([]);
+    const [loadingRefs, _setLoadingRefs] = useState(true);
 
     const baseLabelClasses = "block text-sm font-medium text-slate-300 mb-1.5";
     const baseInputClasses = "block w-full px-3.5 py-2.5 bg-slate-700 border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 text-sm shadow-sm focus:ring-2 focus:ring-brand-accent-primary focus:border-brand-accent-primary disabled:opacity-60";
@@ -68,12 +68,12 @@ function Informes({ session }) {
     const tableHeaderClasses = "px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider";
     const tableCellClasses = "px-4 py-3 whitespace-nowrap text-sm"; // Ajustado padding para consistencia
 
-    const cargarReferencias = useCallback(async () => { /* ... (sin cambios) ... */ }, [session]);
+    const cargarReferencias = useCallback(async () => { /* ... (sin cambios) ... */ }, []);
     useEffect(() => { cargarReferencias(); }, [cargarReferencias]);
 
-    const handleGenerarInformeGastos = useCallback(async () => { /* ... (sin cambios) ... */ }, [session, fechaInicioGastos, fechaFinGastos, selectedCategoriaIdGastos, selectedCarteraIdGastos, tagsStringFiltro]);
-    const handleGenerarInformeFlujo = useCallback(async () => { /* ... (sin cambios) ... */ }, [session, fechaInicioFlujo, fechaFinFlujo]);
-    const handleGenerarComparacion = useCallback(async () => { /* ... (sin cambios) ... */ }, [session, mes1Comparacion, mes2Comparacion]);
+    const handleGenerarInformeGastos = useCallback(async () => { /* ... (sin cambios) ... */ }, []);
+    const handleGenerarInformeFlujo = useCallback(async () => { /* ... (sin cambios) ... */ }, []);
+    const handleGenerarComparacion = useCallback(async () => { /* ... (sin cambios) ... */ }, []);
 
     const formatearMonedaLocal = useCallback((m) => { if (loadingSettings || typeof m !== 'number' || isNaN(m)) return '---'; return m.toLocaleString('es-MX', { style: 'currency', currency: currency }); }, [currency, loadingSettings]);
     const tooltipFormatterFlujo = useCallback((v) => { if (loadingSettings || typeof v !== 'number') return '---'; return v.toLocaleString('es-MX', { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }); }, [currency, loadingSettings]);

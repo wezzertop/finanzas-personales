@@ -51,15 +51,8 @@ function App() {
     // 1. Cargar la sesión inicial
     supabase.auth.getSession().then(({ data: { session: fetchedSession } }) => {
       setSession(fetchedSession);
-      // Si hay sesión y currentPage aún no se ha establecido (es null), ir a Dashboard.
-      // Si no hay sesión, el renderizado condicional mostrará AuthPage.
-      // currentPage podría ya tener un valor si se implementara persistencia o deep linking.
-      if (fetchedSession && !currentPage) {
-        setCurrentPage('Dashboard');
-      } else if (!fetchedSession && !currentPage) {
-        // Si no hay sesión y no hay página, se mostrará AuthPage.
-        // Establecer 'Dashboard' aquí puede ayudar a que el título de la app no quede vacío momentáneamente.
-        setCurrentPage('Dashboard');
+      if (currentPage === null) { // Check if it's the initial load
+        setCurrentPage('Dashboard'); // Default page for title consistency and initial render
       }
       setLoadingSession(false);
     });
@@ -95,7 +88,7 @@ function App() {
     return () => {
       subscription?.unsubscribe(); // Limpiar la suscripción al desmontar el componente
     };
-  }, []); // Array de dependencias VACÍO: este efecto se ejecuta solo una vez al montar.
+  }, []); // Changed dependency array to []
 
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);

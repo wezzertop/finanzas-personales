@@ -1,12 +1,6 @@
 // Archivo: src/lib/debtsApi.js
 import { supabase } from './supabaseClient';
 
-// Helper para obtener el ID del usuario actual (si es necesario explícitamente)
-const getCurrentUserId = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
-};
-
 /**
  * Obtiene todas las deudas del usuario.
  * Incluye saldo_actual (calculado por la vista o RPC en la DB) y la cartera de pago asociada.
@@ -99,20 +93,20 @@ export const editarDebt = async (id, datosActualizados) => {
   if (datosActualizados.pago_minimo_mensual !== undefined) {
     datosActualizados.pago_minimo_mensual = parseFloat(datosActualizados.pago_minimo_mensual) || 0;
   }
-  if (datosActualizados.hasOwnProperty('cartera_pago_id')) {
+  if (Object.prototype.hasOwnProperty.call(datosActualizados, 'cartera_pago_id')) {
     datosActualizados.cartera_pago_id = datosActualizados.cartera_pago_id || null;
   }
-  if (datosActualizados.hasOwnProperty('fecha_inicio')) {
+  if (Object.prototype.hasOwnProperty.call(datosActualizados, 'fecha_inicio')) {
     datosActualizados.fecha_inicio = datosActualizados.fecha_inicio || null;
   }
-  if (datosActualizados.hasOwnProperty('notas')) {
+  if (Object.prototype.hasOwnProperty.call(datosActualizados, 'notas')) {
     datosActualizados.notas = datosActualizados.notas ? datosActualizados.notas.trim() : null;
   }
   // Manejo de nuevos campos
-  if (datosActualizados.hasOwnProperty('tipo_deuda')) {
+  if (Object.prototype.hasOwnProperty.call(datosActualizados, 'tipo_deuda')) {
     datosActualizados.tipo_deuda = datosActualizados.tipo_deuda || 'Personal';
   }
-  if (datosActualizados.hasOwnProperty('frecuencia_pago')) {
+  if (Object.prototype.hasOwnProperty.call(datosActualizados, 'frecuencia_pago')) {
     datosActualizados.frecuencia_pago = datosActualizados.frecuencia_pago || 'mensual';
   }
   // No permitir modificar saldo_actual directamente aquí, se maneja con pagos o RPCs específicas.

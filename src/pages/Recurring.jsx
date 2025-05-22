@@ -50,7 +50,7 @@ const ZapIcon = ({ className = "w-4 h-4" }) => ( // Para "Generar Vencidas"
 // --- Fin Iconos SVG Inline ---
 
 const frecuencias = ['diario', 'semanal', 'quincenal', 'mensual', 'anual'];
-const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch (e) { return ''; } };
+const formatYMD = (date) => { if (!date) return ''; try { if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) { return date; } return new Date(date).toLocaleDateString('sv-SE'); } catch { return ''; } }; // Removed e
 
 function Recurring({ session }) {
     const { currency, loadingSettings } = useSettings();
@@ -150,7 +150,7 @@ function Recurring({ session }) {
         finally { setIsGenerating(false); }
     };
 
-    const formatearFechaCorta = (fechaIso) => { if (!fechaIso) return 'N/A'; try { return new Date(fechaIso + 'T00:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return 'Inv.'; } };
+    const formatearFechaCorta = (fechaIso) => { if (!fechaIso) return 'N/A'; try { return new Date(fechaIso + 'T00:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return 'Inv.'; } }; // Removed e
     const formatearMonedaLocal = useCallback((monto) => { if (loadingSettings || (typeof monto !== 'number' && typeof monto !== 'string')) return '---'; const num = parseFloat(monto); if (isNaN(num)) return '---'; return num.toLocaleString('es-MX', { style: 'currency', currency: currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }); }, [currency, loadingSettings]);
 
     return (

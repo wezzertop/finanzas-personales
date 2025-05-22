@@ -55,7 +55,7 @@ export const GamificacionProvider = ({ children }) => {
 
   useEffect(() => {
     fetchEstadoGamificacion();
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => { // Removed _session
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         fetchEstadoGamificacion();
       } else if (event === 'SIGNED_OUT') {

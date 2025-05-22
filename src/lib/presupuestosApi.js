@@ -26,10 +26,6 @@ export const obtenerPresupuestosPorMes = async (fechaMes) => {
 // Siguen operando sobre la tabla directamente.
 // Después de una operación, la UI deberá recargar los datos con obtenerPresupuestosPorMes.
 
-const getCurrentUserId = async () => { /* ... (igual que antes) ... */
-   const { data: { session } } = await supabase.auth.getSession(); return session?.user?.id ?? null;
-};
-
 export const agregarPresupuesto = async (nuevoPresupuesto, userId) => {
   if (!userId) { return { data: null, error: { message: 'ID usuario no proporcionado.' } }; }
   if (typeof nuevoPresupuesto.monto !== 'number' || isNaN(nuevoPresupuesto.monto) || nuevoPresupuesto.monto < 0) { return { data: null, error: { message: 'Monto inválido.' } }; }
